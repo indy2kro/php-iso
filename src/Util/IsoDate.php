@@ -51,7 +51,7 @@ class IsoDate
         $hour = (int) substr($date, 8, 2);
         $min = (int) substr($date, 10, 2);
         $sec = (int) substr($date, 12, 2);
-        $ms = (int) substr($date, 14, 2);
+        // $ms = (int) substr($date, 14, 2);
         $utcOffset = $buffer[16];
         $utcOffsetHours = (int) round($utcOffset / 4);
 
