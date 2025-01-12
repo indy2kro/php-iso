@@ -19,7 +19,7 @@ class Factory
             Type::SUPPLEMENTARY_VOLUME_DESC => new SupplementaryVolume($stdId, $version, $bytes),
             Type::PARTITION_VOLUME_DESC => new Partition($stdId, $version, $bytes),
             Type::TERMINATOR_DESC => new Terminator($stdId, $version, $bytes),
-            default => throw new Exception('Invalid descriptoin type received: ' . $type),
+            default => throw new Exception('Invalid descriptor type received: ' . $type),
         };
     }
 }
