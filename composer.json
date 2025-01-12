@@ -9,7 +9,7 @@
     "homepage" : "https://github.com/indy2kro/php-iso",
     "license" : "GPL-2.0",
     "require" : {
-        "php" : ">=8.1"
+        "php" : ">=8.2"
     },
     "require-dev" : {
         "squizlabs/php_codesniffer" : ">=3.7",
