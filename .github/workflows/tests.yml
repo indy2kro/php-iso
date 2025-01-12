@@ -2,11 +2,11 @@ name: Tests
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
   schedule:
     - cron: "0 6 * * 3"
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
 jobs:
   php-version:
