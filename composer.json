@@ -3,8 +3,9 @@
     "type" : "library",
     "description" : "PHP ISO file Library. A library for reading ISO files using PHP.",
     "keywords" : [
-        "image",
-        "exif"
+        "iso",
+        "library",
+        "image"
     ],
     "homepage" : "https://github.com/indy2kro/php-iso",
     "license" : "GPL-2.0",
@@ -21,17 +22,19 @@
     },
     "autoload" : {
         "psr-4" : {
-                "PhpIso\\" : "src/"
+            "PhpIso\\" : "src/"
         }
     },
     "autoload-dev" : {
         "psr-4" : {
-                "PhpIso\\Test\\" : "tests/"
+            "PhpIso\\Test\\" : "tests/"
         }
     },
     "config": {
         "allow-plugins": {
             "dealerdirect/phpcodesniffer-composer-installer": true
-        }
+        },
+        "optimize-autoloader": true,
+        "sort-packages": true
     }
 }
