@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PhpIso\Test;
 
-class IsoFileTest
+use PHPUnit\Framework\TestCase;
+
+class IsoFileTest extends TestCase
 {
 }
