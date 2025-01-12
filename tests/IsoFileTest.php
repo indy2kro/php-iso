@@ -18,13 +18,13 @@ class IsoFileTest extends TestCase
         new IsoFile($testFile);
     }
 
-//    public function testConstructorInvalidFile(): void
-//    {
-//        $testFile = dirname(__FILE__, 2) . '/fixtures/invalid.iso';
-//
-//        $this->expectException(Exception::class);
-//        new IsoFile($testFile);
-//    }
+    public function testConstructorInvalidFile(): void
+    {
+        $testFile = dirname(__FILE__, 2) . '/fixtures/invalid.iso';
+
+        $this->expectException(Exception::class);
+        new IsoFile($testFile);
+    }
 
     public function testConstructorExistingFile(): void
     {

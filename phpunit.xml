@@ -4,6 +4,13 @@
     colors="true"
     stopOnFailure="false"
     bootstrap="vendor/autoload.php"
+    failOnDeprecation="true"
+    failOnEmptyTestSuite="true"
+    failOnIncomplete="true"
+    failOnNotice="true"
+    failOnRisky="true"
+    failOnSkipped="false"
+    failOnWarning="true"
     xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/8.3/phpunit.xsd">
     <source>
         <include>

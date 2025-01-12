@@ -31,9 +31,19 @@ class Reader
         }
 
         $offset = 1;
+
+        if (!isset($bytes[$offset])) {
+            throw new Exception('Failed to read buffer entry ' . $offset);
+        }
+
         $type = $bytes[$offset];
         $offset++;
         $stdId = Buffer::getString($bytes, 5, $offset);
+
+        if (!isset($bytes[$offset])) {
+            throw new Exception('Failed to read buffer entry ' . $offset);
+        }
+
         $version = $bytes[$offset];
         $offset++;
 

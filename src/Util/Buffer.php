@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PhpIso\Util;
 
+use PhpIso\Exception;
+
 class Buffer
 {
     /**
@@ -28,6 +30,9 @@ class Buffer
     {
         $string = '';
         for ($i = $offset; $i < $offset + $length; $i++) {
+            if (!isset($buffer[$i])) {
+                throw new Exception('Failed to read buffer entry ' . $i);
+            }
             $string .= chr($buffer[$i]);
         }
 
@@ -68,6 +73,9 @@ class Buffer
     {
         $datas = '';
         for ($i = $offset; $i < $offset + $length; $i++) {
+            if (!isset($buffer[$i])) {
+                throw new Exception('Failed to read buffer entry ' . $i);
+            }
             $datas .= $buffer[$i];
         }
 
@@ -89,6 +97,12 @@ class Buffer
         $len = $length / 2;
 
         for ($i = 0; $i < $len; $i++) {
+            if (!isset($buffer[$offset + ($len - 1 - $i)])) {
+                throw new Exception('Failed to read buffer entry ' . ($offset + ($len - 1 - $i)));
+            }
+            if (!isset($buffer[$offset + $len + $i])) {
+                throw new Exception('Failed to read buffer entry ' . ($offset + $len + $i));
+            }
             $n1 += $buffer[$offset + ($len - 1 - $i)];
             $n2 += $buffer[$offset + $len + $i];
 
@@ -115,6 +129,10 @@ class Buffer
     {
         $lsb = 0;
         for ($i = 0; $i < $length; $i++) {
+            if (!isset($buffer[$offset + ($length - 1 - $i)])) {
+                throw new Exception('Failed to read buffer entry ' . ($offset + ($length - 1 - $i)));
+            }
+
             $lsb += $buffer[$offset + $length - 1 - $i];
 
             if ($i + 1 < $length) {
@@ -135,6 +153,9 @@ class Buffer
     {
         $msb = 0;
         for ($i = 0; $i < $length; $i++) {
+            if (!isset($buffer[$offset + $i])) {
+                throw new Exception('Failed to read buffer entry ' . ($offset + $i));
+            }
             $msb += $buffer[$offset + $i];
 
             if ($i + 1 < $length) {
@@ -155,6 +176,14 @@ class Buffer
     {
         $output = 0;
 
+        if (!isset($buffer[$offset + 0])) {
+            throw new Exception('Failed to read buffer entry ' . ($offset + 0));
+        }
+
+        if (!isset($buffer[$offset + 1])) {
+            throw new Exception('Failed to read buffer entry ' . ($offset + 1));
+        }
+
         $output += $buffer[$offset + 0] << 8;
         $output += $buffer[$offset + 1];
 
@@ -170,6 +199,22 @@ class Buffer
     public static function readInt32(array &$buffer, int &$offset = 0): int
     {
         $output = 0;
+
+        if (!isset($buffer[$offset + 0])) {
+            throw new Exception('Failed to read buffer entry ' . ($offset + 0));
+        }
+
+        if (!isset($buffer[$offset + 1])) {
+            throw new Exception('Failed to read buffer entry ' . ($offset + 1));
+        }
+
+        if (!isset($buffer[$offset + 2])) {
+            throw new Exception('Failed to read buffer entry ' . ($offset + 2));
+        }
+
+        if (!isset($buffer[$offset + 3])) {
+            throw new Exception('Failed to read buffer entry ' . ($offset + 3));
+        }
 
         $output += $buffer[$offset + 0] << 24;
         $output += $buffer[$offset + 1] << 16;
