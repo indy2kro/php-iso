@@ -51,8 +51,8 @@ class IsoDate
         $hour = (int) substr($date, 8, 2);
         $min = (int) substr($date, 10, 2);
         $sec = (int) substr($date, 12, 2);
-        // $ms = (int) substr($date, 14, 2);
-        $utcOffset = $buffer[16];
+        $ms = (int) substr($date, 14, 2);
+        $utcOffset = (int) substr($date, 16, 2);
         $utcOffsetHours = (int) round($utcOffset / 4);
 
         $offset += 1;
@@ -61,6 +61,12 @@ class IsoDate
             return null;
         }
 
-        return Carbon::create($year, $month, $day, $hour, $min, $sec, $utcOffsetHours);
+        $date = Carbon::create($year, $month, $day, $hour, $min, $sec, $utcOffsetHours);
+
+        if ($date !== null) {
+            $date->addMilliseconds($ms);
+        }
+
+        return $date;
     }
 }

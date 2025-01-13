@@ -10,14 +10,13 @@ use PhpIso\Descriptor\Type;
 class IsoFile
 {
     /**
+     * @var array<int, Descriptor>
+     */
+    public array $descriptors = [];
+    /**
      * @var resource
      */
     protected mixed $fileHandle;
-
-    /**
-     * @var array<int, Descriptor>
-     */
-    protected array $descriptors = [];
 
     public function __construct(protected string $isoFilePath)
     {
