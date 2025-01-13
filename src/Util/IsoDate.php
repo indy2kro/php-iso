@@ -62,7 +62,11 @@ class IsoDate
         }
 
         $date = Carbon::create($year, $month, $day, $hour, $min, $sec, $utcOffsetHours);
-        $date->addMilliseconds($ms);
+
+        if ($date !== null) {
+            $date->addMilliseconds($ms);
+        }
+
         return $date;
     }
 }
