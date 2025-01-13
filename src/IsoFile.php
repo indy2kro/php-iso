@@ -9,15 +9,15 @@ use PhpIso\Descriptor\Type;
 
 class IsoFile
 {
-    /**
-     * @var resource
-     */
-    protected mixed $fileHandle;
 
     /**
      * @var array<int, Descriptor>
      */
     public array $descriptors = [];
+    /**
+     * @var resource
+     */
+    protected mixed $fileHandle;
 
     public function __construct(protected string $isoFilePath)
     {
