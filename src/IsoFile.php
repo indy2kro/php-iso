@@ -9,7 +9,6 @@ use PhpIso\Descriptor\Type;
 
 class IsoFile
 {
-
     /**
      * @var array<int, Descriptor>
      */
