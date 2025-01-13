@@ -17,7 +17,7 @@ class IsoFile
     /**
      * @var array<int, Descriptor>
      */
-    protected array $descriptors = [];
+    public array $descriptors = [];
 
     public function __construct(protected string $isoFilePath)
     {

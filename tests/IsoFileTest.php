@@ -29,15 +29,17 @@ class IsoFileTest extends TestCase
     }
 
     #[DataProvider('isoFilesDataProvider')]
-    public function testConstructorExistingFile(string $testFile): void
+    public function testConstructorExistingFile(string $testFile, int $descriptorCount): void
     {
         $isoFile = new IsoFile($testFile);
         $this->assertInstanceOf(IsoFile::class, $isoFile);
+        $this->assertCount($descriptorCount, $isoFile->descriptors);
+        print_r($isoFile);
     }
 
     public static function isoFilesDataProvider(): Iterator
     {
-        yield [dirname(__FILE__, 2) . '/fixtures/1mb.iso'];
-        yield [dirname(__FILE__, 2) . '/fixtures/test.iso'];
+        yield [dirname(__FILE__, 2) . '/fixtures/1mb.iso', 3];
+        yield [dirname(__FILE__, 2) . '/fixtures/test.iso', 2];
     }
 }
