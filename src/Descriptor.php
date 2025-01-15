@@ -10,7 +10,7 @@ abstract class Descriptor
     protected int $type;
 
     /**
-     * @param array<int, mixed>|null $bytes
+     * @param array<int, int>|null $bytes
      */
     public function __construct(public string $stdId = '', public int $version = 0, protected ?array $bytes = null)
     {

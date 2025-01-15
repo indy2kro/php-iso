@@ -24,7 +24,7 @@ class Buffer
     /**
      * Read a string from the buffer
      *
-     * @param array<int, mixed> $buffer
+     * @param array<int, int> $buffer
      */
     public static function getString(array &$buffer, int $length, int &$offset = 0, bool $supplementary = false): string
     {
@@ -47,7 +47,7 @@ class Buffer
     /**
      * Read an a-string from the buffer
      *
-     * @param array<int, mixed> $buffer
+     * @param array<int, int> $buffer
      */
     public static function readAString(array &$buffer, int $length, int &$offset = 0, bool $supplementary = false): string
     {
@@ -57,7 +57,7 @@ class Buffer
     /**
      * Read a d-string from the buffer
      *
-     * @param array<int, mixed> $buffer
+     * @param array<int, int> $buffer
      */
     public static function readDString(array &$buffer, int $length, int &$offset = 0, bool $supplementary = false): string
     {
@@ -67,7 +67,7 @@ class Buffer
     /**
      * Read datas from the buffer
      *
-     * @param array<int, mixed> $buffer
+     * @param array<int, int> $buffer
      */
     public static function getBytes(array &$buffer, int $length, int &$offset = 0): string
     {
@@ -86,7 +86,7 @@ class Buffer
     /**
      * Read a number written in BBO (Bost Byte Order) (ex: a 4 BYTES number require 8 BYTES, 4 for LSM mode and 4 for MSB)
      *
-     * @param array<int, mixed> $buffer
+     * @param array<int, int> $buffer
      *
      * @return int The BBO number OR -1 on error
      */
@@ -123,7 +123,7 @@ class Buffer
     /**
      * Read a number written in LSB mode ("Less Signifient Bit" first)
      *
-     * @param array<int, mixed> $buffer
+     * @param array<int, int> $buffer
      */
     public static function readLSB(array &$buffer, int $length, int &$offset = 0): int
     {
@@ -147,7 +147,7 @@ class Buffer
     /**
      * Read a number written in MSB mode ("Most Signifient Bit" first)
      *
-     * @param array<int, mixed> $buffer
+     * @param array<int, int> $buffer
      */
     public static function readMSB(array &$buffer, int $length, int &$offset = 0): int
     {
@@ -170,7 +170,7 @@ class Buffer
     /**
      * Read a word (16 bits number)
      *
-     * @param array<int, mixed> $buffer
+     * @param array<int, int> $buffer
      */
     public static function readInt16(array &$buffer, int &$offset = 0): int
     {
@@ -194,7 +194,7 @@ class Buffer
     /**
      * Read a DWORD (32 bits number)
      *
-     * @param array<int, mixed> $buffer
+     * @param array<int, int> $buffer
      */
     public static function readInt32(array &$buffer, int &$offset = 0): int
     {

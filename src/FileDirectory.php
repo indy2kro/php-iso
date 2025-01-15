@@ -110,13 +110,13 @@ class FileDirectory
     /**
      * Load the "Directory Record" from buffer
      *
-     * @param array<int, mixed> $buffer
+     * @param array<int, int> $buffer
      */
     public function init(array &$buffer, int &$offset, bool $supplementary = false): bool
     {
         $tmp = $offset;
 
-        $this->dirRecLength = (int) $buffer[$tmp];
+        $this->dirRecLength = $buffer[$tmp];
         $tmp++;
         if ($this->dirRecLength === 0) {
             return false;
@@ -156,7 +156,7 @@ class FileDirectory
                 $this->fileId = substr($this->fileId, 0, strlen($this->fileId) - 2);
             }
         }
-
+        
         $offset += $this->dirRecLength;
         return true;
     }

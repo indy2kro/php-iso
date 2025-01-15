@@ -15,7 +15,7 @@ class IsoDate
     /**
      * Create from a "7 bytes" date
      *
-     * @param array<int, mixed> $buffer
+     * @param array<int, int> $buffer
      */
     public static function init7(array &$buffer, int &$offset): ?Carbon
     {
@@ -39,7 +39,7 @@ class IsoDate
     /**
      * Create from a "17 bytes" date
      *
-     * @param array<int, mixed> $buffer
+     * @param array<int, int> $buffer
      */
     public static function init17(array &$buffer, int &$offset): ?Carbon
     {

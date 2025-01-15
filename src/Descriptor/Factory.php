@@ -9,7 +9,7 @@ use PhpIso\Descriptor;
 class Factory
 {
     /**
-     * @param array<int, mixed> $bytes
+     * @param array<int, int> $bytes
      */
     public static function create(int $type, string $stdId = '', int $version = 0, ?array $bytes = null): Descriptor
     {

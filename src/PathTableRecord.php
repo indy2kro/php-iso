@@ -49,7 +49,7 @@ class PathTableRecord
     /**
      * Load the "Path Table Record" from buffer
      *
-     * @param array<int, mixed> $bytes
+     * @param array<int, int> $bytes
      */
     public function init(array &$bytes, int &$offset, bool $supplementary = false): bool
     {
