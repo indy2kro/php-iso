@@ -156,7 +156,7 @@ class FileDirectory
                 $this->fileId = substr($this->fileId, 0, strlen($this->fileId) - 2);
             }
         }
-        
+
         $offset += $this->dirRecLength;
         return true;
     }
