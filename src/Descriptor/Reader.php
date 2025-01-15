@@ -16,8 +16,6 @@ class Reader
 
     public function read(): ?Descriptor
     {
-        $offset = 0;
-
         $string = $this->isoFile->read(2048);
 
         if ($string === false) {

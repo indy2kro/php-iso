@@ -267,13 +267,13 @@ class FileDirectory
 
         $offset = 1;
         $fdDesc = new self();
-        $Extents = [];
+        $extents = [];
 
-        while ($fdDesc->Init($bytes, $offset, $supplementary) !== false) {
-            $Extents[] = $fdDesc;
+        while ($fdDesc->init($bytes, $offset, $supplementary) !== false) {
+            $extents[] = $fdDesc;
             $fdDesc = new self();
         }
 
-        return $Extents;
+        return $extents;
     }
 }

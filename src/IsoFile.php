@@ -15,7 +15,7 @@ class IsoFile
     public array $descriptors = [];
 
     /**
-     * @var resource
+     * @var ?resource
      */
     protected mixed $fileHandle;
 
@@ -33,12 +33,20 @@ class IsoFile
 
     public function seek(int $offset, int $whence = SEEK_SET): int
     {
+        if ($this->fileHandle === null) {
+            return -1;
+        }
+
         return fseek($this->fileHandle, $offset, $whence);
     }
 
     public function read(int $length): string|false
     {
         if ($length < 1) {
+            return false;
+        }
+
+        if ($this->fileHandle === null) {
             return false;
         }
 
@@ -81,6 +89,11 @@ class IsoFile
 
     protected function closeFile(): void
     {
+        if ($this->fileHandle === null) {
+            return;
+        }
+
         fclose($this->fileHandle);
+        $this->fileHandle = null;
     }
 }

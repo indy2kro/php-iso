@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace PhpIso;
 
-use PhpIso\Descriptor\Type;
-
 abstract class Descriptor
 {
-    public string $name = '';
-    protected int $type = Type::NOT_SET_DESC;
+    public string $name;
+    protected int $type;
 
     /**
      * @param array<int, mixed>|null $bytes

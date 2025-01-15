@@ -6,7 +6,6 @@ namespace PhpIso\Descriptor;
 
 class Type
 {
-    public const NOT_SET_DESC = -1;
     public const BOOT_RECORD_DESC = 0;
     public const PRIMARY_VOLUME_DESC = 1;
     public const SUPPLEMENTARY_VOLUME_DESC = 2;
