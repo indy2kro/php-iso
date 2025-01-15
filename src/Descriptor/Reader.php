@@ -22,6 +22,7 @@ class Reader
             return null;
         }
 
+        /** @var array<int, int>|false $bytes */
         $bytes = unpack('C*', $string);
 
         if ($bytes === false) {

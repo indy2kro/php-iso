@@ -259,6 +259,7 @@ class FileDirectory
             return false;
         }
 
+        /** @var array<int, int>|false $bytes */
         $bytes = unpack('C*', $string);
 
         if ($bytes === false) {
