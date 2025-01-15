@@ -9,8 +9,8 @@ use PhpIso\IsoFile;
 
 class Terminator extends Descriptor
 {
+    public string $name = 'Terminator descriptor';
     protected int $type = Type::TERMINATOR_DESC;
-    protected string $name = 'Terminator descriptor';
 
     public function init(IsoFile $isoFile, int &$offset): void
     {

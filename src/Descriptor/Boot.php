@@ -21,9 +21,9 @@ class Boot extends Descriptor
      * An identification of the boot system specified in the Boot System Use field of the Boot Record.
      */
     public string $bootId = '';
+    public string $name = 'Boot volume descriptor';
 
     protected int $type = Type::BOOT_RECORD_DESC;
-    protected string $name = 'Boot volume descriptor';
 
     public function init(IsoFile $isoFile, int &$offset): void
     {

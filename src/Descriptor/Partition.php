@@ -11,28 +11,28 @@ use PhpIso\Util\Buffer;
 class Partition extends Descriptor
 {
     /**
-     * Unused parameter
-     */
-    public int $unused;
-    /**
      * The "Partition Volume Descriptors"'s System Identifier
      */
     public string $systemID;
+
     /**
      * The "Partition Volume Descriptors"'s Partition Identifier
      */
     public string $volPartitionID;
+
     /**
      * The "Partition Volume Descriptors"'s Partition location
      */
     public int $volPartitionLocation;
+
     /**
      * The "Partition Volume Descriptors"'s Partition size
      */
     public int $volPartitionSize;
 
+    public string $name = 'Partition volume descriptor';
+
     protected int $type = Type::PARTITION_VOLUME_DESC;
-    protected string $name = 'Partition volume descriptor';
 
     public function init(IsoFile $isoFile, int &$offset): void
     {
@@ -40,7 +40,7 @@ class Partition extends Descriptor
             return;
         }
 
-        $this->unused = $this->bytes[$offset];
+        $unused = $this->bytes[$offset];
         $offset++;
 
         $this->systemID = Buffer::readAString($this->bytes, 32, $offset);
@@ -51,5 +51,6 @@ class Partition extends Descriptor
 
         // free some space...
         unset($this->bytes);
+        unset($unused);
     }
 }

@@ -13,6 +13,7 @@ class IsoFile
      * @var array<int, Descriptor>
      */
     public array $descriptors = [];
+
     /**
      * @var resource
      */

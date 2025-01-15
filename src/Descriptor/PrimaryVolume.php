@@ -6,6 +6,6 @@ namespace PhpIso\Descriptor;
 
 class PrimaryVolume extends Volume
 {
+    public string $name = 'Primary volume descriptor';
     protected int $type = Type::PRIMARY_VOLUME_DESC;
-    protected string $name = 'Primary volume descriptor';
 }

@@ -8,13 +8,13 @@ use PhpIso\Descriptor\Type;
 
 abstract class Descriptor
 {
+    public string $name = '';
     protected int $type = Type::NOT_SET_DESC;
-    protected string $name = '';
 
     /**
      * @param array<int, mixed>|null $bytes
      */
-    public function __construct(protected string $stdId = '', protected int $version = 0, protected ?array $bytes = null)
+    public function __construct(public string $stdId = '', public int $version = 0, protected ?array $bytes = null)
     {
     }
 
