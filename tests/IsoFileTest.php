@@ -44,6 +44,15 @@ class IsoFileTest extends TestCase
         $this->assertCount($descriptorCount, $isoFile->descriptors);
     }
 
+    public function testInvalidSeekRead(): void
+    {
+        $testFile = dirname(__FILE__, 2) . '/fixtures/test.iso';
+        $isoFile = new IsoFile($testFile);
+        $isoFile->closeFile();
+        $this->assertSame(-1, $isoFile->seek(10));
+        $this->assertFalse($isoFile->read(10));
+        $this->assertFalse($isoFile->read(-2));
+    }
 
     public function testDescriptorsTestIso(): void
     {
@@ -255,6 +264,108 @@ class IsoFileTest extends TestCase
         $this->assertSame($pathsExpected, $paths);
     }
 
+    public function testDescriptorsSubdirIso(): void
+    {
+        $testFile = dirname(__FILE__, 2) . '/fixtures/subdir.iso';
+        $isoFile = new IsoFile($testFile);
+        $this->assertCount(2, $isoFile->descriptors);
+
+        $this->assertArrayHasKey(Type::TERMINATOR_DESC, $isoFile->descriptors);
+
+        /** @var Terminator $terminatorDescriptor */
+        $terminatorDescriptor = $isoFile->descriptors[Type::TERMINATOR_DESC];
+
+        $this->assertInstanceOf(Terminator::class, $terminatorDescriptor);
+
+        $this->assertSame('Terminator descriptor', $terminatorDescriptor->name);
+        $this->assertSame('CD001', $terminatorDescriptor->stdId);
+        $this->assertSame(1, $terminatorDescriptor->version);
+
+        $this->assertArrayHasKey(Type::PRIMARY_VOLUME_DESC, $isoFile->descriptors);
+
+        /** @var PrimaryVolume $primaryVolumeDescriptor */
+        $primaryVolumeDescriptor = $isoFile->descriptors[Type::PRIMARY_VOLUME_DESC];
+
+        $this->assertInstanceOf(PrimaryVolume::class, $primaryVolumeDescriptor);
+
+        $this->assertSame('Primary volume descriptor', $primaryVolumeDescriptor->name);
+        $this->assertSame('CD001', $primaryVolumeDescriptor->stdId);
+        $this->assertSame(1, $primaryVolumeDescriptor->version);
+        $this->assertSame(1, $primaryVolumeDescriptor->fileStructureVersion);
+        $this->assertSame('LINUX', $primaryVolumeDescriptor->systemId);
+        $this->assertSame('CDROM', $primaryVolumeDescriptor->volumeId);
+        $this->assertSame(181, $primaryVolumeDescriptor->volumeSpaceSize);
+        $this->assertSame('GENISOIMAGE ISO 9660/HFS FILESYSTEM CREATOR (C) 1993 E.YOUNGDALE (C) 1997-2006 J.PEARSON/J.SCHILLING (C) 2006-2007 CDRKIT TEAM', $primaryVolumeDescriptor->appId);
+        $this->assertNotNull($primaryVolumeDescriptor->creationDate);
+        $this->assertSame(Carbon::create(2025, 1, 15, 16, 7, 41, 'Europe/Paris')?->toDateTimeString(), $primaryVolumeDescriptor->creationDate->toDateTimeString());
+        $this->assertNotNull($primaryVolumeDescriptor->modificationDate);
+        $this->assertSame(Carbon::create(2025, 1, 15, 16, 7, 41, 'Europe/Paris')?->toDateTimeString(), $primaryVolumeDescriptor->modificationDate->toDateTimeString());
+        $this->assertNull($primaryVolumeDescriptor->expirationDate);
+        $this->assertNotNull($primaryVolumeDescriptor->effectiveDate);
+        $this->assertSame(Carbon::create(2025, 1, 15, 16, 7, 41, 'Europe/Paris')?->toDateTimeString(), $primaryVolumeDescriptor->effectiveDate->toDateTimeString());
+
+        // check root directory
+        $rootDirectory = $primaryVolumeDescriptor->rootDirectory;
+        $this->assertSame('.', $rootDirectory->fileId);
+        $this->assertTrue($rootDirectory->isDirectory());
+        $this->assertNotNull($rootDirectory->recordingDate);
+        $this->assertSame(Carbon::create(2025, 1, 15, 16, 7, 30, 'Europe/Paris')?->toDateTimeString(), $rootDirectory->recordingDate->toDateTimeString());
+
+        // check path table
+        $pathTable = $primaryVolumeDescriptor->loadTable($isoFile);
+        $this->assertNotNull($pathTable);
+
+        $paths = [];
+
+        /** @var PathTableRecord $pathRecord */
+        foreach ($pathTable as $pathRecord) {
+            $currentPath = $pathRecord->getFullPath($pathTable);
+
+            $paths[$currentPath] = [];
+
+            // check extents
+            $extents = $pathRecord->loadExtents($isoFile, $primaryVolumeDescriptor->blockSize);
+
+            if ($extents !== false) {
+                /** @var FileDirectory $extentRecord */
+                foreach ($extents as $extentRecord) {
+                    $path = $extentRecord->fileId;
+                    if ($extentRecord->isDirectory()) {
+                        $path .= '/';
+                    }
+                    $paths[$currentPath][] = $path;
+                }
+            }
+        }
+
+        $pathsExpected = [
+            '/' => [
+                './',
+                '../',
+                'DIR1/',
+                'TEST1.TXT',
+            ],
+            '/DIR1' => [
+                './',
+                '../',
+                'DIR2/',
+                'TEST2.TXT',
+            ],
+            'DIR1/DIR2' => [
+                './',
+                '../',
+                'DIR3/',
+                'TEST3.TXT',
+            ],
+            'DIR1/DIR2/DIR3' => [
+                './',
+                '../',
+                'TEST4.TXT',
+            ],
+        ];
+        $this->assertSame($pathsExpected, $paths);
+    }
+
     public function testDescriptorsDosIso(): void
     {
         $testFile = dirname(__FILE__, 2) . '/fixtures/DOS4.01_bootdisk.iso';
@@ -324,6 +435,7 @@ class IsoFileTest extends TestCase
     {
         yield [dirname(__FILE__, 2) . '/fixtures/1mb.iso', 3];
         yield [dirname(__FILE__, 2) . '/fixtures/test.iso', 2];
+        yield [dirname(__FILE__, 2) . '/fixtures/subdir.iso', 2];
         yield [dirname(__FILE__, 2) . '/fixtures/test-dir.iso', 2];
         yield [dirname(__FILE__, 2) . '/fixtures/DOS4.01_bootdisk.iso', 4];
     }

@@ -53,6 +53,31 @@ class IsoFile
         return fread($this->fileHandle, $length);
     }
 
+    public function openFile(): void
+    {
+        if (file_exists($this->isoFilePath) === false) {
+            throw new Exception('File does not exist: ' . $this->isoFilePath);
+        }
+
+        $fileHandle = fopen($this->isoFilePath, 'rb');
+
+        if ($fileHandle === false) {
+            throw new Exception('Cannot open file for reading: ' . $this->isoFilePath);
+        }
+
+        $this->fileHandle = $fileHandle;
+    }
+
+    public function closeFile(): void
+    {
+        if ($this->fileHandle === null) {
+            return;
+        }
+
+        fclose($this->fileHandle);
+        $this->fileHandle = null;
+    }
+
     protected function processFile(): bool
     {
         if ($this->seek(16 * 2048, SEEK_SET) === -1) {
@@ -70,30 +95,5 @@ class IsoFile
         }
 
         return count($this->descriptors) > 0;
-    }
-
-    protected function openFile(): void
-    {
-        if (file_exists($this->isoFilePath) === false) {
-            throw new Exception('File does not exist: ' . $this->isoFilePath);
-        }
-
-        $fileHandle = fopen($this->isoFilePath, 'rb');
-
-        if ($fileHandle === false) {
-            throw new Exception('Cannot open file for reading: ' . $this->isoFilePath);
-        }
-
-        $this->fileHandle = $fileHandle;
-    }
-
-    protected function closeFile(): void
-    {
-        if ($this->fileHandle === null) {
-            return;
-        }
-
-        fclose($this->fileHandle);
-        $this->fileHandle = null;
     }
 }
