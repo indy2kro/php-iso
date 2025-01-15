@@ -21,20 +21,5 @@ abstract class Descriptor
         return $this->type;
     }
 
-    public function getId(): string
-    {
-        return $this->stdId;
-    }
-
-    public function getVersion(): int
-    {
-        return $this->version;
-    }
-
-    public function getName(): string
-    {
-        return $this->name;
-    }
-
     abstract public function init(IsoFile $isoFile, int &$offset): void;
 }
