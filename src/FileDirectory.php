@@ -250,7 +250,7 @@ class FileDirectory
      */
     public static function loadExtentsSt(IsoFile $isoFile, int $blockSize, int $location, bool $supplementary = false): array|false
     {
-        if ($isoFile->seek($location * $blockSize, SEEK_SET) === false) {
+        if ($isoFile->seek($location * $blockSize, SEEK_SET) === -1) {
             return false;
         }
 

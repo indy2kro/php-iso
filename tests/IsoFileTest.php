@@ -86,6 +86,7 @@ class IsoFileTest extends TestCase
         $rootDirectory = $primaryVolumeDescriptor->rootDirectory;
         $this->assertSame('.', $rootDirectory->fileId);
         $this->assertTrue($rootDirectory->isDirectory());
+        $this->assertNotNull($rootDirectory->recordingDate);
         $this->assertSame(Carbon::create(2025, 1, 12, 15, 0, 53, 'Europe/Paris')?->toDateTimeString(), $rootDirectory->recordingDate->toDateTimeString());
 
         // check path table
@@ -103,13 +104,15 @@ class IsoFileTest extends TestCase
             // check extents
             $extents = $pathRecord->loadExtents($isoFile, $primaryVolumeDescriptor->blockSize);
 
-            /** @var FileDirectory $extentRecord */
-            foreach ($extents as $extentRecord) {
-                $path = $extentRecord->fileId;
-                if ($extentRecord->isDirectory()) {
-                    $path .= '/';
+            if ($extents !== false) {
+                /** @var FileDirectory $extentRecord */
+                foreach ($extents as $extentRecord) {
+                    $path = $extentRecord->fileId;
+                    if ($extentRecord->isDirectory()) {
+                        $path .= '/';
+                    }
+                    $paths[$currentPath][] = $path;
                 }
-                $paths[$currentPath][] = $path;
             }
         }
 
@@ -194,6 +197,7 @@ class IsoFileTest extends TestCase
         $rootDirectory = $primaryVolumeDescriptor->rootDirectory;
         $this->assertSame('.', $rootDirectory->fileId);
         $this->assertTrue($rootDirectory->isDirectory());
+        $this->assertNotNull($rootDirectory->recordingDate);
         $this->assertSame(Carbon::create(2025, 1, 15, 9, 41, 9, 'Europe/Paris')?->toDateTimeString(), $rootDirectory->recordingDate->toDateTimeString());
 
         // check path table
@@ -211,13 +215,15 @@ class IsoFileTest extends TestCase
             // check extents
             $extents = $pathRecord->loadExtents($isoFile, $primaryVolumeDescriptor->blockSize);
 
-            /** @var FileDirectory $extentRecord */
-            foreach ($extents as $extentRecord) {
-                $path = $extentRecord->fileId;
-                if ($extentRecord->isDirectory()) {
-                    $path .= '/';
+            if ($extents !== false) {
+                /** @var FileDirectory $extentRecord */
+                foreach ($extents as $extentRecord) {
+                    $path = $extentRecord->fileId;
+                    if ($extentRecord->isDirectory()) {
+                        $path .= '/';
+                    }
+                    $paths[$currentPath][] = $path;
                 }
-                $paths[$currentPath][] = $path;
             }
         }
 
