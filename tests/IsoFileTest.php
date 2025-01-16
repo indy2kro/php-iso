@@ -321,7 +321,7 @@ class IsoFileTest extends TestCase
     {
         $testFile = dirname(__FILE__, 2) . '/fixtures/iso9660_hfs_part.iso';
         $isoFile = new IsoFile($testFile);
-        print_r($isoFile->descriptors);
+
         $this->assertCount(3, $isoFile->descriptors);
     }
 
