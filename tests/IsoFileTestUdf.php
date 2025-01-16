@@ -228,11 +228,24 @@ class IsoFileTestUdf extends TestCase
         $this->assertArrayHasKey(Type::UDF_TEA_VOLUME_DESC, $isoFile->descriptors);
     }
 
+    public function testDescriptorsIso9660UdfImgburnIso(): void
+    {
+        $testFile = dirname(__FILE__, 2) . '/fixtures/iso9660_udf_imgburn.iso';
+        $isoFile = new IsoFile($testFile);
+        $this->assertCount(6, $isoFile->descriptors);
+
+// TODO - add assert for UDF volumes
+        $this->assertArrayHasKey(Type::UDF_BEA_VOLUME_DESC, $isoFile->descriptors);
+        $this->assertArrayHasKey(Type::UDF_NSR2_VOLUME_DESC, $isoFile->descriptors);
+        $this->assertArrayHasKey(Type::UDF_TEA_VOLUME_DESC, $isoFile->descriptors);
+    }
+
     public static function isoFilesDataProvider(): Iterator
     {
         yield [dirname(__FILE__, 2) . '/fixtures/test.iso', 5];
         yield [dirname(__FILE__, 2) . '/fixtures/iso9660_udf.iso', 6];
         yield [dirname(__FILE__, 2) . '/fixtures/iso9660_udf_hfs.iso', 6];
         yield [dirname(__FILE__, 2) . '/fixtures/udf.iso', 3];
+        yield [dirname(__FILE__, 2) . '/fixtures/iso9660_udf_imgburn.iso', 6];
     }
 }

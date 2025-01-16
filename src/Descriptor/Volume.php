@@ -107,12 +107,9 @@ abstract class Volume extends Descriptor
      */
     public function loadTable(IsoFile $isoFile): ?array
     {
+        // only M-Path should be used for amd64 platforms
         if ($this->isMPathTable()) {
             return $this->loadMPathTable($isoFile);
-        }
-
-        if ($this->isLPathTable()) {
-            return $this->loadLPathTable($isoFile);
         }
 
         // unknown path table

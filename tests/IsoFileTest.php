@@ -102,6 +102,9 @@ class IsoFileTest extends TestCase
         $this->assertSame(Carbon::create(2025, 1, 15, 9, 41, 9, 'Europe/Paris')?->toDateTimeString(), $rootDirectory->recordingDate->toDateTimeString());
 
         // check path table
+        $this->assertTrue($primaryVolumeDescriptor->isMPathTable());
+        $this->assertTrue($primaryVolumeDescriptor->isLPathTable());
+
         $pathTable = $primaryVolumeDescriptor->loadTable($isoFile);
         $this->assertNotNull($pathTable);
 
@@ -314,11 +317,20 @@ class IsoFileTest extends TestCase
         $this->assertNull($supplementaryVolumeDescriptor->effectiveDate);
     }
 
+    public function testDescriptorsIso9660HfsPartIso(): void
+    {
+        $testFile = dirname(__FILE__, 2) . '/fixtures/iso9660_hfs_part.iso';
+        $isoFile = new IsoFile($testFile);
+        print_r($isoFile->descriptors);
+        $this->assertCount(3, $isoFile->descriptors);
+    }
+
     public static function isoFilesDataProvider(): Iterator
     {
         yield [dirname(__FILE__, 2) . '/fixtures/1mb.iso', 3];
         yield [dirname(__FILE__, 2) . '/fixtures/subdir.iso', 2];
         yield [dirname(__FILE__, 2) . '/fixtures/test-dir.iso', 2];
         yield [dirname(__FILE__, 2) . '/fixtures/DOS4.01_bootdisk.iso', 4];
+        yield [dirname(__FILE__, 2) . '/fixtures/iso9660_hfs_part.iso', 3];
     }
 }
