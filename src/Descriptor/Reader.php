@@ -46,36 +46,19 @@ class Reader
         $version = $bytes[$offset];
         $offset++;
 
-        $udfType = '';
-
         // Check for UDF-specific descriptors
         if ($type === Type::BOOT_RECORD_DESC) {
-            switch ($stdId) {
-                case 'CD001':
-                    $type = Type::BOOT_RECORD_DESC;
-                    break;
-                case UdfType::BEA01:
-                    $type = Type::UDF_VOLUME_DESC;
-                    $udfType = $stdId;
-                    break;
-                case UdfType::NSR02:
-                    $type = Type::UDF_VOLUME_DESC;
-                    $udfType = $stdId;
-                    break;
-                case UdfType::NSR03:
-                    $type = Type::UDF_VOLUME_DESC;
-                    $udfType = $stdId;
-                    break;
-                case UdfType::TEA01:
-                    $type = Type::UDF_VOLUME_DESC;
-                    $udfType = $stdId;
-                    break;
-                default:
-                    throw new Exception('Failed to detect UDF');
-            }
+            $type = match ($stdId) {
+                'CD001' => Type::BOOT_RECORD_DESC,
+                UdfType::BEA01 => Type::UDF_BEA_VOLUME_DESC,
+                UdfType::NSR02 => Type::UDF_NSR2_VOLUME_DESC,
+                UdfType::NSR03 => Type::UDF_NSR3_VOLUME_DESC,
+                UdfType::TEA01 => Type::UDF_TEA_VOLUME_DESC,
+                default => throw new Exception('Failed to detect UDF'),
+            };
         }
 
-        $descriptor = Factory::create($type, $stdId, $version, $bytes, $udfType);
+        $descriptor = Factory::create($type, $stdId, $version, $bytes);
         $descriptor->init($this->isoFile, $offset);
 
         return $descriptor;
