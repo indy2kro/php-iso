@@ -78,39 +78,150 @@ class BufferTest extends TestCase
         Buffer::readBBO($buffer, 100, $offset);
     }
 
-    public function testReadLSB(): void
+    public function testReadLSBNormalOperation(): void
     {
-        $buffer = [1, 0]; // LSB representation of 1
+        // Test normal operation with a small number
+        $buffer = [1, 0];
         $offset = 0;
-        $result = Buffer::readLSB($buffer, 2, $offset);
-        $this->assertSame(1, $result);
+        $this->assertSame(1, Buffer::readLSB($buffer, 2, $offset));
+        $this->assertSame(2, $offset);
+
+        // Test with a larger number
+        $buffer = [0, 1];
+        $offset = 0;
+        $this->assertSame(256, Buffer::readLSB($buffer, 2, $offset));
+        $this->assertSame(2, $offset);
+
+        // Test with maximum 16-bit unsigned integer
+        $buffer = [255, 255];
+        $offset = 0;
+        $this->assertSame(65535, Buffer::readLSB($buffer, 2, $offset));
         $this->assertSame(2, $offset);
     }
 
-    public function testReadMSB(): void
+    public function testReadLSBBufferTooShortFirstByteMissing(): void
     {
-        $buffer = [0, 1]; // MSB representation of 1
+        // Test exception when the first byte is missing
+        $buffer = [];
         $offset = 0;
-        $result = Buffer::readMSB($buffer, 2, $offset);
-        $this->assertSame(1, $result);
+        $this->expectException(Exception::class);
+        Buffer::readLSB($buffer, 2, $offset);
+    }
+
+    public function testReadLSBBufferTooShortSecondByteMissing(): void
+    {
+        // Test exception when the second byte is missing
+        $buffer = [0];
+        $offset = 0;
+        $this->expectException(Exception::class);
+        Buffer::readLSB($buffer, 2, $offset);
+    }
+
+    public function testReadMSBNormalOperation(): void
+    {
+        // Test normal operation with a small number
+        $buffer = [0, 1];
+        $offset = 0;
+        $this->assertSame(1, Buffer::readMSB($buffer, 2, $offset));
+        $this->assertSame(2, $offset);
+
+        // Test with a larger number
+        $buffer = [1, 0];
+        $offset = 0;
+        $this->assertSame(256, Buffer::readMSB($buffer, 2, $offset));
+        $this->assertSame(2, $offset);
+
+        // Test with maximum 16-bit unsigned integer
+        $buffer = [255, 255];
+        $offset = 0;
+        $this->assertSame(65535, Buffer::readMSB($buffer, 2, $offset));
         $this->assertSame(2, $offset);
     }
 
-    public function testReadInt16(): void
+    public function testReadMSBBufferTooShortFirstByteMissing(): void
     {
-        $buffer = [0, 1]; // 16-bit representation of 1
+        // Test exception when the first byte is missing
+        $buffer = [];
         $offset = 0;
-        $result = Buffer::readInt16($buffer, $offset);
-        $this->assertSame(1, $result);
+        $this->expectException(Exception::class);
+        Buffer::readMSB($buffer, 2, $offset);
+    }
+
+    public function testReadMSBBufferTooShortSecondByteMissing(): void
+    {
+        // Test exception when the second byte is missing
+        $buffer = [0];
+        $offset = 0;
+        $this->expectException(Exception::class);
+        Buffer::readMSB($buffer, 2, $offset);
+    }
+
+    public function testReadInt16NormalOperation(): void
+    {
+        // Test normal operation with a small number
+        $buffer = [0, 1];
+        $offset = 0;
+        $this->assertSame(1, Buffer::readInt16($buffer, $offset));
+        $this->assertSame(2, $offset);
+
+        // Test with a larger number
+        $buffer = [1, 0];
+        $offset = 0;
+        $this->assertSame(256, Buffer::readInt16($buffer, $offset));
+        $this->assertSame(2, $offset);
+
+        // Test with maximum 16-bit unsigned integer
+        $buffer = [255, 255];
+        $offset = 0;
+        $this->assertSame(65535, Buffer::readInt16($buffer, $offset));
         $this->assertSame(2, $offset);
     }
 
-    public function testReadInt32(): void
+    public function testReadInt16BufferTooShortFirstByteMissing(): void
     {
-        $buffer = [0, 0, 0, 1]; // 32-bit representation of 1
+        // Test exception when the first byte is missing
+        $buffer = [];
         $offset = 0;
-        $result = Buffer::readInt32($buffer, $offset);
-        $this->assertSame(1, $result);
+        $this->expectException(Exception::class);
+        Buffer::readInt16($buffer, $offset);
+    }
+
+    public function testReadInt16BufferTooShortSecondByteMissing(): void
+    {
+        // Test exception when the second byte is missing
+        $buffer = [0];
+        $offset = 0;
+        $this->expectException(Exception::class);
+        Buffer::readInt16($buffer, $offset);
+    }
+
+    public function testReadInt32NormalOperation(): void
+    {
+        // Test normal operation with a small number
+        $buffer = [0, 0, 0, 1];
+        $offset = 0;
+        $this->assertSame(1, Buffer::readInt32($buffer, $offset));
         $this->assertSame(4, $offset);
+
+        // Test with a larger number
+        $buffer = [0, 0, 1, 0];
+        $offset = 0;
+        $this->assertSame(256, Buffer::readInt32($buffer, $offset));
+        $this->assertSame(4, $offset);
+
+        // Test with maximum 32-bit unsigned integer
+        $buffer = [255, 255, 255, 255];
+        $offset = 0;
+        $this->assertSame(4294967295, Buffer::readInt32($buffer, $offset));
+        $this->assertSame(4, $offset);
+    }
+
+    public function testReadInt32BufferTooShort(): void
+    {
+        // Test exception when buffer is too short
+        $buffer = [0, 0, 0];
+        $offset = 0;
+        $this->expectException(Exception::class);
+        Buffer::readInt32($buffer, $offset);
     }
 }
