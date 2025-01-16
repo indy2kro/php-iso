@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PhpIso\Test;
+namespace PhpIso\Test\Util;
 
 use PHPUnit\Framework\TestCase;
 use PhpIso\Util\IsoDate;
