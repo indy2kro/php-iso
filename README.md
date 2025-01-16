@@ -2,7 +2,7 @@
 
 PHP Library used to read metadata from ISO files based on [php-iso-file](https://github.com/php-classes/php-iso-file)
 
-This library follows the [ECMA-119](https://www.ecma-international.org/wp-content/uploads/ECMA-119_4th_edition_june_2019.pdf) standard.
+This library follows the [ISO 9660 / ECMA-119](https://www.ecma-international.org/wp-content/uploads/ECMA-119_4th_edition_june_2019.pdf) standard.
 
 Basic concepts
 -----
@@ -17,6 +17,16 @@ Basic concepts
 - Volume descriptors contain path table inside which can be loaded using `loadTable`
   - `PathTableRecord` - object which contains the record information for a file/directory
 - Each class contains various properties which can be used to interact with them, most of them `public`
+
+Known limitations
+------------
+- ISO extensions currently not supported:
+  - El Torito
+  - Joliet
+  - Rock Ridge
+- UDF file format not supported
+- Reading metadata requires manually processing the descriptors
+  - Some Iterator implementation would be nice to have
 
 Installation
 ------------

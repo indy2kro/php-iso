@@ -58,7 +58,7 @@ class IsoFileTest extends TestCase
     {
         $testFile = dirname(__FILE__, 2) . '/fixtures/test.iso';
         $isoFile = new IsoFile($testFile);
-        $this->assertCount(2, $isoFile->descriptors);
+        $this->assertCount(3, $isoFile->descriptors);
 
         $this->assertArrayHasKey(Type::TERMINATOR_DESC, $isoFile->descriptors);
 
@@ -434,7 +434,7 @@ class IsoFileTest extends TestCase
     public static function isoFilesDataProvider(): Iterator
     {
         yield [dirname(__FILE__, 2) . '/fixtures/1mb.iso', 3];
-        yield [dirname(__FILE__, 2) . '/fixtures/test.iso', 2];
+        yield [dirname(__FILE__, 2) . '/fixtures/test.iso', 3];
         yield [dirname(__FILE__, 2) . '/fixtures/subdir.iso', 2];
         yield [dirname(__FILE__, 2) . '/fixtures/test-dir.iso', 2];
         yield [dirname(__FILE__, 2) . '/fixtures/DOS4.01_bootdisk.iso', 4];

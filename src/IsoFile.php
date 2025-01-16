@@ -6,6 +6,8 @@ namespace PhpIso;
 
 use PhpIso\Descriptor\Reader;
 use PhpIso\Descriptor\Type;
+use PhpIso\Descriptor\UdfDescriptor;
+use PhpIso\Descriptor\UdfType;
 
 class IsoFile
 {
@@ -86,11 +88,46 @@ class IsoFile
 
         $reader = new Reader($this);
 
-        while (($descriptor = $reader->read()) !== null) {
-            $this->descriptors[$descriptor->getType()] = $descriptor;
+        $foundTerminator = false;
+        while (true) {
+            try {
+                $descriptor = $reader->read();
+
+                if ($descriptor === null) {
+                    throw new Exception('Finished reading');
+                }
+
+                if (isset($this->descriptors[$descriptor->getType()])) {
+                    throw new Exception('Descriptor already exists');
+                }
+
+                $this->descriptors[$descriptor->getType()] = $descriptor;
+            } catch (Exception $ex) {
+                if ($foundTerminator) {
+                    break;
+                }
+                throw $ex;
+            }
+
+            // If it's a UDF descriptor, handle it separately
+            if ($descriptor instanceof UdfDescriptor) {
+                if ($descriptor->udfType === UdfType::TEA01) {
+                    break; // Stop at Terminating Extended Area Descriptor
+                }
+            } else {
+                if ($foundTerminator) {
+                    break;
+                }
+            }
 
             if ($descriptor->getType() === Type::TERMINATOR_DESC) {
-                break;
+                if ($foundTerminator) {
+                    break;
+                }
+
+                $foundTerminator = true;
+                // Keep going if UDF might still be present
+                continue;
             }
         }
 

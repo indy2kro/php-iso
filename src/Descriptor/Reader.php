@@ -46,7 +46,36 @@ class Reader
         $version = $bytes[$offset];
         $offset++;
 
-        $descriptor = Factory::create($type, $stdId, $version, $bytes);
+        $udfType = '';
+
+        // Check for UDF-specific descriptors
+        if ($type === Type::BOOT_RECORD_DESC) {
+            switch ($stdId) {
+                case 'CD001':
+                    $type = Type::BOOT_RECORD_DESC;
+                    break;
+                case UdfType::BEA01:
+                    $type = Type::UDF_VOLUME_DESC;
+                    $udfType = $stdId;
+                    break;
+                case UdfType::NSR02:
+                    $type = Type::UDF_VOLUME_DESC;
+                    $udfType = $stdId;
+                    break;
+                case UdfType::NSR03:
+                    $type = Type::UDF_VOLUME_DESC;
+                    $udfType = $stdId;
+                    break;
+                case UdfType::TEA01:
+                    $type = Type::UDF_VOLUME_DESC;
+                    $udfType = $stdId;
+                    break;
+                default:
+                    throw new Exception('Failed to detect UDF');
+            }
+        }
+
+        $descriptor = Factory::create($type, $stdId, $version, $bytes, $udfType);
         $descriptor->init($this->isoFile, $offset);
 
         return $descriptor;

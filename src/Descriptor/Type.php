@@ -10,5 +10,6 @@ class Type
     public const PRIMARY_VOLUME_DESC = 1;
     public const SUPPLEMENTARY_VOLUME_DESC = 2;
     public const PARTITION_VOLUME_DESC = 3;
+    public const UDF_VOLUME_DESC = 4;
     public const TERMINATOR_DESC = 255;
 }
