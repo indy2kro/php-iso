@@ -112,6 +112,7 @@ class PathTableRecord
             }
 
             $path = $used->dirIdentifier . '/' . $path;
+
             if ($used->parentDirNum === 1) {
                 break;
             }
