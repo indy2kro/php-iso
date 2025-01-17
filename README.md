@@ -36,6 +36,75 @@ Installation
 This class can easily be installed via [Composer](https://getcomposer.org):  
 `composer require indy2kro/php-iso`
 
+CLI tool
+------------
+
+This tool also provides a CLI tool that can be used to view information about ISO files - `bin\isotool`:  
+```
+Description:
+  Tool to process ISO files
+
+Usage:
+  isotool --file=<path>
+
+Options:
+  -f, --file              Path for the ISO file (mandatory)
+```
+
+Sample usage:
+```
+Input ISO file: fixtures/1mb.iso
+
+Number of descriptors: 3
+  - Primary volume descriptor
+   - System ID: Win32
+   - Volume ID: 25_12_2024
+   - App ID: PowerISO
+   - Volume Space Size: 542
+   - Volume Set Size: 1
+   - Volume SeqNum: 1
+   - Block size: 2048
+   - Volume Set ID: 
+   - Publisher ID: 
+   - Preparer ID: 
+   - Copyright File ID: 
+   - Abstract File ID: 
+   - Bibliographic File ID: 
+   - Creation Date: 2024-12-25 14:01:20
+   - Modification Date: 2024-12-25 14:01:20
+   - Expiration Date: 
+   - Effective Date: 
+   - Files:
+.
+..
+1MB.PNG
+
+  - Supplementary volume descriptor
+   - System ID: Win32
+   - Volume ID: 25_12_2024
+   - App ID: PowerISO
+   - Volume Space Size: 542
+   - Volume Set Size: 1
+   - Volume SeqNum: 1
+   - Block size: 2048
+   - Volume Set ID: 
+   - Publisher ID: 
+   - Preparer ID: 
+   - Copyright File ID: ?
+   - Abstract File ID: ?
+   - Bibliographic File ID: ?
+   - Creation Date: 2024-12-25 14:01:20
+   - Modification Date: 2024-12-25 14:01:20
+   - Expiration Date: 
+   - Effective Date: 
+   - Files:
+.
+..
+1mb.png
+
+  - Terminator descriptor
+
+```
 
 Usage
 -----

@@ -1,0 +1,13 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use PhpIso\Cli\IsoTool;
+
+(static function () {
+    require_once dirname(__FILE__, 2) . '/vendor/autoload.php';
+
+    $application = new IsoTool();
+    $application->run();
+})();
