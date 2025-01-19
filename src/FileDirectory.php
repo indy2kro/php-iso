@@ -152,20 +152,17 @@ class FileDirectory
             $tmp++;
         } else {
             if ($this->jolietLevel === 3) {
-                $this->fileId = Buffer::readAString($buffer, $this->fileIdLength, $tmp, $supplementary);
-
-                $pos = strpos($this->fileId, ';1');
-                if ($pos !== false && $pos === strlen($this->fileId) - 2) {
-                    $this->fileId = substr($this->fileId, 0, strlen($this->fileId) - 2);
-                }
-            } else {
                 $this->fileId = Buffer::readDString($buffer, $this->fileIdLength, $tmp, $supplementary);
-
-                $pos = strpos($this->fileId, ';1');
-                if ($pos !== false && $pos === strlen($this->fileId) - 2) {
-                    $this->fileId = substr($this->fileId, 0, strlen($this->fileId) - 2);
-                }
+            } else {
+                $this->fileId = Buffer::readAString($buffer, $this->fileIdLength, $tmp, $supplementary);
             }
+
+            $pos = strpos($this->fileId, ';1');
+            if ($pos !== false && $pos === strlen($this->fileId) - 2) {
+                $this->fileId = substr($this->fileId, 0, strlen($this->fileId) - 2);
+            }
+
+            $this->fileId = trim($this->fileId);
         }
 
         $offset += $this->dirRecLength;

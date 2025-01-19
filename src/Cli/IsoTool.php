@@ -153,10 +153,17 @@ class IsoTool
                             $dataLength = $extentRecord->dataLength;
                             echo $fullPath . ' (location: ' . $location . ') (length: ' . $dataLength . ')'  . PHP_EOL;
 
+                            $dirPath = dirname($fullPath);
+                            if (!is_dir($dirPath)) {
+                                if (mkdir($dirPath, 0777, true) === false) {
+                                    throw new Exception('Failed to create directory: ' . $dirPath);
+                                }
+                            }
+
                             $pathRecord->extractFile($isoFile, $volumeDescriptor->blockSize, $location, $dataLength, $fullPath);
                         } else {
                             if (! is_dir($fullPath)) {
-                                if (mkdir($fullPath) === false) {
+                                if (mkdir($fullPath, 0777, true) === false) {
                                     throw new Exception('Failed to create directory: ' . $fullPath);
                                 }
                             }

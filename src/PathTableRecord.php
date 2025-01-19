@@ -66,7 +66,7 @@ class PathTableRecord
         $offsetTmp++;
         $this->location = Buffer::readInt32($bytes, $offsetTmp);
         $this->parentDirNum = Buffer::readInt16($bytes, $offsetTmp);
-        $this->dirIdentifier = trim(Buffer::readDString($bytes, $this->dirIdLen, $offsetTmp, $supplementary));
+        $this->dirIdentifier = Buffer::readAString($bytes, $this->dirIdLen, $offsetTmp);
 
         if ($this->dirIdLen % 2 !== 0) {
             $offsetTmp++;
