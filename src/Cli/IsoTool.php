@@ -122,9 +122,9 @@ class IsoTool
         echo 'Extract finished!' . PHP_EOL;
     }
 
-    protected function extractFiles(Volume $primaryVolume, IsoFile $isoFile, string $destinationDir): void
+    protected function extractFiles(Volume $volumeDescriptor, IsoFile $isoFile, string $destinationDir): void
     {
-        $pathTable = $primaryVolume->loadTable($isoFile);
+        $pathTable = $volumeDescriptor->loadTable($isoFile);
 
         if ($pathTable === null) {
             return;
@@ -135,7 +135,7 @@ class IsoTool
         /** @var PathTableRecord $pathRecord */
         foreach ($pathTable as $pathRecord) {
             // check extents
-            $extents = $pathRecord->loadExtents($isoFile, $primaryVolume->blockSize);
+            $extents = $pathRecord->loadExtents($isoFile, $volumeDescriptor->blockSize, ($volumeDescriptor->getType() === Type::SUPPLEMENTARY_VOLUME_DESC), $volumeDescriptor->jolietLevel);
 
             if ($extents !== false) {
                 /** @var FileDirectory $extentRecord */
@@ -153,7 +153,7 @@ class IsoTool
                             $dataLength = $extentRecord->dataLength;
                             echo $fullPath . ' (location: ' . $location . ') (length: ' . $dataLength . ')'  . PHP_EOL;
 
-                            $pathRecord->extractFile($isoFile, $primaryVolume->blockSize, $location, $dataLength, $fullPath);
+                            $pathRecord->extractFile($isoFile, $volumeDescriptor->blockSize, $location, $dataLength, $fullPath);
                         } else {
                             if (! is_dir($fullPath)) {
                                 if (mkdir($fullPath) === false) {
@@ -172,6 +172,7 @@ class IsoTool
         echo '   - System ID: ' . $volumeDescriptor->systemId . PHP_EOL;
         echo '   - Volume ID: ' . $volumeDescriptor->volumeId . PHP_EOL;
         echo '   - App ID: ' . $volumeDescriptor->appId . PHP_EOL;
+        echo '   - File Structure Version: ' . $volumeDescriptor->fileStructureVersion . PHP_EOL;
         echo '   - Volume Space Size: ' . $volumeDescriptor->volumeSpaceSize . PHP_EOL;
         echo '   - Volume Set Size: ' . $volumeDescriptor->volumeSetSize . PHP_EOL;
         echo '   - Volume SeqNum: ' . $volumeDescriptor->volumeSeqNum . PHP_EOL;
@@ -186,6 +187,10 @@ class IsoTool
         echo '   - Modification Date: ' . $volumeDescriptor->modificationDate?->toDateTimeString() . PHP_EOL;
         echo '   - Expiration Date: ' . $volumeDescriptor->expirationDate?->toDateTimeString() . PHP_EOL;
         echo '   - Effective Date: ' . $volumeDescriptor->effectiveDate?->toDateTimeString() . PHP_EOL;
+
+        if ($volumeDescriptor instanceof SupplementaryVolume && $volumeDescriptor->jolietLevel !== 0) {
+            echo '   - Joliet Level: ' . $volumeDescriptor->jolietLevel . PHP_EOL;
+        }
     }
 
     protected function displayFiles(Volume $volumeDescriptor, IsoFile $isoFile): void
@@ -201,7 +206,7 @@ class IsoTool
         /** @var PathTableRecord $pathRecord */
         foreach ($pathTable as $pathRecord) {
             // check extents
-            $extents = $pathRecord->loadExtents($isoFile, $volumeDescriptor->blockSize);
+            $extents = $pathRecord->loadExtents($isoFile, $volumeDescriptor->blockSize, ($volumeDescriptor->getType() === Type::SUPPLEMENTARY_VOLUME_DESC), $volumeDescriptor->jolietLevel);
 
             if ($extents !== false) {
                 /** @var FileDirectory $extentRecord */

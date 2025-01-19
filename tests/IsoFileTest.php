@@ -311,6 +311,7 @@ class IsoFileTest extends TestCase
         $this->assertSame('DOS4.01', $supplementaryVolumeDescriptor->volumeId);
         $this->assertSame(848, $supplementaryVolumeDescriptor->volumeSpaceSize);
         $this->assertSame('', $supplementaryVolumeDescriptor->appId);
+        $this->assertSame(3, $supplementaryVolumeDescriptor->jolietLevel);
         $this->assertNull($supplementaryVolumeDescriptor->creationDate);
         $this->assertNull($supplementaryVolumeDescriptor->modificationDate);
         $this->assertNull($supplementaryVolumeDescriptor->expirationDate);

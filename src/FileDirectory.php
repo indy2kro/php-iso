@@ -107,6 +107,8 @@ class FileDirectory
      */
     public string $fileId;
 
+    public int $jolietLevel = 0;
+
     /**
      * Load the "Directory Record" from buffer
      *
@@ -149,11 +151,20 @@ class FileDirectory
             $this->fileId = '..';
             $tmp++;
         } else {
-            $this->fileId = Buffer::readDString($buffer, $this->fileIdLength, $tmp, $supplementary);
+            if ($this->jolietLevel === 3) {
+                $this->fileId = Buffer::readAString($buffer, $this->fileIdLength, $tmp, $supplementary);
 
-            $pos = strpos($this->fileId, ';1');
-            if ($pos !== false && $pos === strlen($this->fileId) - 2) {
-                $this->fileId = substr($this->fileId, 0, strlen($this->fileId) - 2);
+                $pos = strpos($this->fileId, ';1');
+                if ($pos !== false && $pos === strlen($this->fileId) - 2) {
+                    $this->fileId = substr($this->fileId, 0, strlen($this->fileId) - 2);
+                }
+            } else {
+                $this->fileId = Buffer::readDString($buffer, $this->fileIdLength, $tmp, $supplementary);
+
+                $pos = strpos($this->fileId, ';1');
+                if ($pos !== false && $pos === strlen($this->fileId) - 2) {
+                    $this->fileId = substr($this->fileId, 0, strlen($this->fileId) - 2);
+                }
             }
         }
 
@@ -238,9 +249,9 @@ class FileDirectory
      *
      * @return array<int, FileDirectory>|false
      */
-    public function loadExtents(IsoFile $isoFile, int $blockSize, bool $supplementary = false): array|false
+    public function loadExtents(IsoFile $isoFile, int $blockSize, bool $supplementary = false, int $jolietLevel = 0): array|false
     {
-        return self::loadExtentsSt($isoFile, $blockSize, $this->location, $supplementary);
+        return self::loadExtentsSt($isoFile, $blockSize, $this->location, $supplementary, $jolietLevel);
     }
 
     /**
@@ -248,7 +259,7 @@ class FileDirectory
      *
      * @return array<int, FileDirectory>|false
      */
-    public static function loadExtentsSt(IsoFile $isoFile, int $blockSize, int $location, bool $supplementary = false): array|false
+    public static function loadExtentsSt(IsoFile $isoFile, int $blockSize, int $location, bool $supplementary = false, int $jolietLevel = 0): array|false
     {
         if ($isoFile->seek($location * $blockSize, SEEK_SET) === -1) {
             return false;
@@ -268,11 +279,13 @@ class FileDirectory
 
         $offset = 1;
         $fdDesc = new self();
+        $fdDesc->jolietLevel = $jolietLevel;
         $extents = [];
 
         while ($fdDesc->init($bytes, $offset, $supplementary) !== false) {
             $extents[] = $fdDesc;
             $fdDesc = new self();
+            $fdDesc->jolietLevel = $jolietLevel;
         }
 
         return $extents;

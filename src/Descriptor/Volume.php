@@ -38,6 +38,7 @@ abstract class Volume extends Descriptor
     public ?Carbon $expirationDate = null;
     public ?Carbon $effectiveDate = null;
     public int $fileStructureVersion;
+    public int $jolietLevel = 0;
 
     public function init(IsoFile $isoFile, int &$offset): void
     {
@@ -58,8 +59,26 @@ abstract class Volume extends Descriptor
 
         $this->volumeSpaceSize = Buffer::readBBO($this->bytes, 8, $offset);
 
-        // unused
-        $unused = Buffer::getBytes($this->bytes, 32, $offset);
+        // joliet escape sequence
+        $jolietEscapeSequence = Buffer::getBytes($this->bytes, 32, $offset);
+
+        // Joliet Detection - If this is a Supplementary Volume Descriptor
+        if ($this->type === Type::SUPPLEMENTARY_VOLUME_DESC) {
+            // Define Joliet escape sequences as their byte values
+            $jolietLevels = [
+                1 => '374764', // %/@ in byte format
+                2 => '374767', // %/C in byte format
+                3 => '374769', // %/E in byte format
+            ];
+
+            // Check for Joliet escape sequences indicating Unicode support
+            foreach ($jolietLevels as $level => $sequence) {
+                if (str_contains($jolietEscapeSequence, $sequence)) {
+                    $this->jolietLevel = $level; // Record the Joliet level if found
+                    break;
+                }
+            }
+        }
 
         $this->volumeSetSize = Buffer::readBBO($this->bytes, 4, $offset);
         $this->volumeSeqNum = Buffer::readBBO($this->bytes, 4, $offset);
@@ -72,6 +91,7 @@ abstract class Volume extends Descriptor
         $this->optMPathTablePos = Buffer::readMSB($this->bytes, 4, $offset);
 
         $this->rootDirectory = new FileDirectory();
+        $this->rootDirectory->jolietLevel = $this->jolietLevel;
         $this->rootDirectory->init($this->bytes, $offset, ($this->type === Type::SUPPLEMENTARY_VOLUME_DESC));
 
         $this->volumeSetId = trim(Buffer::readDString($this->bytes, 128, $offset, ($this->type === Type::SUPPLEMENTARY_VOLUME_DESC)));

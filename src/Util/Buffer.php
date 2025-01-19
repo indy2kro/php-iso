@@ -33,7 +33,9 @@ class Buffer
             if (! isset($buffer[$i])) {
                 throw new Exception('Failed to read buffer entry ' . $i);
             }
-            $string .= chr($buffer[$i]);
+            if ($supplementary || $buffer[$i] !== 0) {
+                $string .= chr($buffer[$i]);
+            }
         }
 
         if ($supplementary) {

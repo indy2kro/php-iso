@@ -81,9 +81,9 @@ class PathTableRecord
      *
      * @return array<int, FileDirectory>|false
      */
-    public function loadExtents(IsoFile &$isoFile, int $blockSize, bool $supplementary = false): array|false
+    public function loadExtents(IsoFile &$isoFile, int $blockSize, bool $supplementary = false, int $jolietLevel = 0): array|false
     {
-        return FileDirectory::loadExtentsSt($isoFile, $blockSize, $this->location, $supplementary);
+        return FileDirectory::loadExtentsSt($isoFile, $blockSize, $this->location, $supplementary, $jolietLevel);
     }
 
     public function extractFile(IsoFile &$isoFile, int $blockSize, int $location, int $dataLength, string $destinationFile): void
