@@ -154,7 +154,7 @@ class IsoTool
                             echo $fullPath . ' (location: ' . $location . ') (length: ' . $dataLength . ')'  . PHP_EOL;
 
                             $dirPath = dirname($fullPath);
-                            if (!is_dir($dirPath)) {
+                            if (! is_dir($dirPath)) {
                                 if (mkdir($dirPath, 0777, true) === false) {
                                     throw new Exception('Failed to create directory: ' . $dirPath);
                                 }
