@@ -48,9 +48,9 @@ class PathTableRecordTest extends TestCase
             3 => $record3,
         ];
 
-        $this->assertSame('/root', $record1->getFullPath($pathTable));
-        $this->assertSame('/subdir', $record2->getFullPath($pathTable));
-        $this->assertSame('subdir/subsubdir', $record3->getFullPath($pathTable));
+        $this->assertSame(DIRECTORY_SEPARATOR . 'root' . DIRECTORY_SEPARATOR, $record1->getFullPath($pathTable));
+        $this->assertSame(DIRECTORY_SEPARATOR . 'subdir' . DIRECTORY_SEPARATOR, $record2->getFullPath($pathTable));
+        $this->assertSame(DIRECTORY_SEPARATOR . 'subdir' . DIRECTORY_SEPARATOR . 'subsubdir' . DIRECTORY_SEPARATOR, $record3->getFullPath($pathTable));
     }
 
     public function testGetFullPathWithMaxDepth(): void

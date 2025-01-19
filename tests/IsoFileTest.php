@@ -132,7 +132,7 @@ class IsoFileTest extends TestCase
         }
 
         $pathsExpected = [
-            '/' => [
+            DIRECTORY_SEPARATOR => [
                 './',
                 '../',
                 'CONTRIBU.MD',
@@ -140,7 +140,7 @@ class IsoFileTest extends TestCase
                 'SUB_DIR/',
                 'TEST_FIL.TXT',
             ],
-            '/SUB_DIR' => [
+            DIRECTORY_SEPARATOR . 'SUB_DIR' . DIRECTORY_SEPARATOR => [
                 './',
                 '../',
                 'TEST_000.TXT',
@@ -225,25 +225,25 @@ class IsoFileTest extends TestCase
         }
 
         $pathsExpected = [
-            '/' => [
+            DIRECTORY_SEPARATOR => [
                 './',
                 '../',
                 'DIR1/',
                 'TEST1.TXT',
             ],
-            '/DIR1' => [
+            DIRECTORY_SEPARATOR . 'DIR1' . DIRECTORY_SEPARATOR => [
                 './',
                 '../',
                 'DIR2/',
                 'TEST2.TXT',
             ],
-            'DIR1/DIR2' => [
+            DIRECTORY_SEPARATOR . 'DIR1' . DIRECTORY_SEPARATOR . 'DIR2' . DIRECTORY_SEPARATOR => [
                 './',
                 '../',
                 'DIR3/',
                 'TEST3.TXT',
             ],
-            'DIR1/DIR2/DIR3' => [
+            DIRECTORY_SEPARATOR . 'DIR1' . DIRECTORY_SEPARATOR . 'DIR2' . DIRECTORY_SEPARATOR . 'DIR3' . DIRECTORY_SEPARATOR => [
                 './',
                 '../',
                 'TEST4.TXT',

@@ -6,6 +6,9 @@ namespace PhpIso\Cli;
 
 use PhpIso\Descriptor;
 use PhpIso\Descriptor\Boot;
+use PhpIso\Descriptor\PrimaryVolume;
+use PhpIso\Descriptor\SupplementaryVolume;
+use PhpIso\Descriptor\Type;
 use PhpIso\Descriptor\Volume;
 use PhpIso\Exception;
 use PhpIso\FileDirectory;
@@ -39,11 +42,23 @@ class IsoTool
             exit(2);
         }
 
+        $extractPath = '';
+        if (isset($options['extract']) && is_string($options['extract'])) {
+            $extractPath = $options['extract'];
+        } elseif (isset($options['x']) && is_string($options['x'])) {
+            $extractPath = $options['x'];
+        }
+
         echo 'Input ISO file: ' . $file . PHP_EOL;
 
         try {
             $this->checkIsoFile($file);
-            $this->infoAction($file);
+
+            if ($extractPath !== '') {
+                $this->extractAction($file, $extractPath);
+            } else {
+                $this->infoAction($file);
+            }
         } catch (Throwable $ex) {
             $this->displayError($ex->getMessage());
             exit(3);
@@ -81,6 +96,74 @@ class IsoTool
             }
 
             echo PHP_EOL;
+        }
+    }
+
+    protected function extractAction(string $file, string $extractPath): void
+    {
+        if (! is_dir($extractPath)) {
+            $mkdirResult = mkdir($extractPath, 0777, true);
+
+            if ($mkdirResult === false) {
+                throw new Exception('Failed to create extract output directory: ' . $extractPath);
+            }
+        }
+
+        $isoFile = new IsoFile($file);
+
+        echo 'Extract ISO file to: ' . $extractPath . PHP_EOL;
+
+        if (isset($isoFile->descriptors[Type::SUPPLEMENTARY_VOLUME_DESC]) && $isoFile->descriptors[Type::SUPPLEMENTARY_VOLUME_DESC] instanceof SupplementaryVolume) {
+            $this->extractFiles($isoFile->descriptors[Type::SUPPLEMENTARY_VOLUME_DESC], $isoFile, $extractPath);
+        } elseif (isset($isoFile->descriptors[Type::PRIMARY_VOLUME_DESC]) && $isoFile->descriptors[Type::PRIMARY_VOLUME_DESC] instanceof PrimaryVolume) {
+            $this->extractFiles($isoFile->descriptors[Type::PRIMARY_VOLUME_DESC], $isoFile, $extractPath);
+        }
+
+        echo 'Extract finished!' . PHP_EOL;
+    }
+
+    protected function extractFiles(Volume $primaryVolume, IsoFile $isoFile, string $destinationDir): void
+    {
+        $pathTable = $primaryVolume->loadTable($isoFile);
+
+        if ($pathTable === null) {
+            return;
+        }
+
+        $destinationDir = rtrim($destinationDir, DIRECTORY_SEPARATOR);
+
+        /** @var PathTableRecord $pathRecord */
+        foreach ($pathTable as $pathRecord) {
+            // check extents
+            $extents = $pathRecord->loadExtents($isoFile, $primaryVolume->blockSize);
+
+            if ($extents !== false) {
+                /** @var FileDirectory $extentRecord */
+                foreach ($extents as $extentRecord) {
+                    $path = $extentRecord->fileId;
+
+                    if (! $extentRecord->isThis() && ! $extentRecord->isParent()) {
+                        $fullPath = $destinationDir . $pathRecord->getFullPath($pathTable) . $path;
+                        if ($extentRecord->isDirectory()) {
+                            $fullPath .= DIRECTORY_SEPARATOR;
+                        }
+
+                        if (! $extentRecord->isDirectory()) {
+                            $location = $extentRecord->location;
+                            $dataLength = $extentRecord->dataLength;
+                            echo $fullPath . ' (location: ' . $location . ') (length: ' . $dataLength . ')'  . PHP_EOL;
+
+                            $pathRecord->extractFile($isoFile, $primaryVolume->blockSize, $location, $dataLength, $fullPath);
+                        } else {
+                            if (! is_dir($fullPath)) {
+                                if (mkdir($fullPath) === false) {
+                                    throw new Exception('Failed to create directory: ' . $fullPath);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -124,10 +207,21 @@ class IsoTool
                 /** @var FileDirectory $extentRecord */
                 foreach ($extents as $extentRecord) {
                     $path = $extentRecord->fileId;
-                    if ($extentRecord->isDirectory() && ! $extentRecord->isThis() && ! $extentRecord->isParent()) {
-                        $path .= '/';
+
+                    if (! $extentRecord->isThis() && ! $extentRecord->isParent()) {
+                        $fullPath = $pathRecord->getFullPath($pathTable) . $path;
+                        if ($extentRecord->isDirectory()) {
+                            $fullPath .= DIRECTORY_SEPARATOR;
+                        }
+
+                        if (! $extentRecord->isDirectory()) {
+                            $location = $extentRecord->location;
+                            $dataLength = $extentRecord->dataLength;
+                            echo $fullPath . ' (location: ' . $location . ') (length: ' . $dataLength . ')'  . PHP_EOL;
+                        } else {
+                            echo $fullPath . PHP_EOL;
+                        }
                     }
-                    echo $path . PHP_EOL;
                 }
             }
         }
@@ -145,9 +239,10 @@ class IsoTool
      */
     protected function parseCliArgs(): array
     {
-        $shortopts = 'f:';
+        $shortopts = 'f:x::';
         $longopts = [
             'file:',
+            'extract::',
         ];
         $options = getopt($shortopts, $longopts, $restIndex);
 
@@ -173,7 +268,8 @@ Usage:
   isotool [options] --file=<path>
 
 Options:
-  -f, --file              Path for the ISO file (mandatory)
+  -f, --file                     Path for the ISO file (mandatory)
+  -x, --extract=<extract_path>   Extract files in the given location
 ';
         echo $help;
     }

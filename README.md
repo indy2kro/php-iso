@@ -2,7 +2,7 @@
 
 [![codecov](https://codecov.io/gh/indy2kro/php-iso/graph/badge.svg?token=NBj76nYtmB)](https://codecov.io/gh/indy2kro/php-iso) [![Tests](https://github.com/indy2kro/php-iso/actions/workflows/tests.yml/badge.svg)](https://github.com/indy2kro/php-iso/actions/workflows/tests.yml)
 
-PHP Library used to read metadata from ISO files based on [php-iso-file](https://github.com/php-classes/php-iso-file)
+PHP Library used to read metadata and extract information from ISO files based on [php-iso-file](https://github.com/php-classes/php-iso-file)
 
 This library follows the [ISO 9660 / ECMA-119](https://www.ecma-international.org/wp-content/uploads/ECMA-119_4th_edition_june_2019.pdf) standard.
 
@@ -45,10 +45,11 @@ Description:
   Tool to process ISO files
 
 Usage:
-  isotool --file=<path>
+  isotool [options] --file=<path>
 
 Options:
-  -f, --file              Path for the ISO file (mandatory)
+  -f, --file                     Path for the ISO file (mandatory)
+  -x, --extract=<extract_path>   Extract files in the given location
 ```
 
 Sample usage:

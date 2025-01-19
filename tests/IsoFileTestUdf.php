@@ -109,14 +109,14 @@ class IsoFileTestUdf extends TestCase
         }
 
         $pathsExpected = [
-            '/' => [
+            DIRECTORY_SEPARATOR => [
                 './',
                 '../',
                 'CLASSES/',
                 'COMPOSER.JSO',
                 'EXAMPLES/',
             ],
-            '/CLASSES' => [
+            DIRECTORY_SEPARATOR . 'CLASSES' . DIRECTORY_SEPARATOR => [
                 './',
                 '../',
                 'BOOT_CA2.PHP',
@@ -133,7 +133,7 @@ class IsoFileTestUdf extends TestCase
                 'ISO_INCL.PHP',
                 'PATH_TAB.PHP',
             ],
-            '/EXAMPLES' => [
+            DIRECTORY_SEPARATOR . 'EXAMPLES' . DIRECTORY_SEPARATOR => [
                 './',
                 '../',
                 'BOOTCATA.PHP',

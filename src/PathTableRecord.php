@@ -86,6 +86,45 @@ class PathTableRecord
         return FileDirectory::loadExtentsSt($isoFile, $blockSize, $this->location, $supplementary);
     }
 
+    public function extractFile(IsoFile &$isoFile, int $blockSize, int $location, int $dataLength, string $destinationFile): void
+    {
+        $seekLocation = $location * $blockSize;
+
+        if ($isoFile->seek($seekLocation, SEEK_SET) === -1) {
+            throw new Exception('Failed to seek to location');
+        }
+
+        $writeHandle = fopen($destinationFile, 'wb');
+
+        if ($writeHandle === false) {
+            throw new Exception('Failed to open file for writing: ' . $destinationFile);
+        }
+
+        do {
+            $readLength = 1024;
+
+            if ($dataLength < $readLength) {
+                $readLength = $dataLength;
+            }
+
+            $readResult = $isoFile->read($readLength);
+
+            if ($readResult === false) {
+                break;
+            }
+
+            $writeResult = fwrite($writeHandle, $readResult);
+
+            if ($writeResult === false) {
+                throw new Exception('Failed to write to file: ' . $destinationFile);
+            }
+
+            $dataLength -= $readLength;
+        } while ($dataLength > 0);
+
+        fclose($writeHandle);
+    }
+
     /**
      * Build the full path of a PathTableRecord object based on it's parent(s)
      *
@@ -96,7 +135,11 @@ class PathTableRecord
     public function getFullPath(array $pathTable): string
     {
         if ($this->parentDirNum === 1) {
-            return '/' . $this->dirIdentifier;
+            if ($this->dirIdentifier === '') {
+                return DIRECTORY_SEPARATOR;
+            }
+
+            return DIRECTORY_SEPARATOR . $this->dirIdentifier . DIRECTORY_SEPARATOR;
         }
 
         $path = $this->dirIdentifier;
@@ -111,7 +154,7 @@ class PathTableRecord
                 throw new Exception('Maximum depth of 1000 reached');
             }
 
-            $path = $used->dirIdentifier . '/' . $path;
+            $path = $used->dirIdentifier . DIRECTORY_SEPARATOR . $path;
 
             if ($used->parentDirNum === 1) {
                 break;
@@ -120,6 +163,6 @@ class PathTableRecord
             $used = $pathTable[$used->parentDirNum];
         }
 
-        return $path;
+        return DIRECTORY_SEPARATOR . $path . DIRECTORY_SEPARATOR;
     }
 }
