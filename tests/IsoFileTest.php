@@ -86,19 +86,19 @@ class IsoFileTest extends TestCase
         $this->assertSame('CDROM', $primaryVolumeDescriptor->volumeId);
         $this->assertSame(198, $primaryVolumeDescriptor->volumeSpaceSize);
         $this->assertSame('GENISOIMAGE ISO 9660/HFS FILESYSTEM CREATOR (C) 1993 E.YOUNGDALE (C) 1997-2006 J.PEARSON/J.SCHILLING (C) 2006-2007 CDRKIT TEAM', $primaryVolumeDescriptor->appId);
-        $this->assertNotNull($primaryVolumeDescriptor->creationDate);
+        $this->assertInstanceOf(Carbon::class, $primaryVolumeDescriptor->creationDate);
         $this->assertSame(Carbon::create(2025, 1, 15, 9, 41, 36, 'Europe/Paris')?->toDateTimeString(), $primaryVolumeDescriptor->creationDate->toDateTimeString());
-        $this->assertNotNull($primaryVolumeDescriptor->modificationDate);
+        $this->assertInstanceOf(Carbon::class, $primaryVolumeDescriptor->modificationDate);
         $this->assertSame(Carbon::create(2025, 1, 15, 9, 41, 36, 'Europe/Paris')?->toDateTimeString(), $primaryVolumeDescriptor->modificationDate->toDateTimeString());
-        $this->assertNull($primaryVolumeDescriptor->expirationDate);
-        $this->assertNotNull($primaryVolumeDescriptor->effectiveDate);
+        $this->assertNotInstanceOf(Carbon::class, $primaryVolumeDescriptor->expirationDate);
+        $this->assertInstanceOf(Carbon::class, $primaryVolumeDescriptor->effectiveDate);
         $this->assertSame(Carbon::create(2025, 1, 15, 9, 41, 36, 'Europe/Paris')?->toDateTimeString(), $primaryVolumeDescriptor->effectiveDate->toDateTimeString());
 
         // check root directory
         $rootDirectory = $primaryVolumeDescriptor->rootDirectory;
         $this->assertSame('.', $rootDirectory->fileId);
         $this->assertTrue($rootDirectory->isDirectory());
-        $this->assertNotNull($rootDirectory->recordingDate);
+        $this->assertInstanceOf(Carbon::class, $rootDirectory->recordingDate);
         $this->assertSame(Carbon::create(2025, 1, 15, 9, 41, 9, 'Europe/Paris')?->toDateTimeString(), $rootDirectory->recordingDate->toDateTimeString());
 
         // check path table
@@ -182,19 +182,19 @@ class IsoFileTest extends TestCase
         $this->assertSame('CDROM', $primaryVolumeDescriptor->volumeId);
         $this->assertSame(181, $primaryVolumeDescriptor->volumeSpaceSize);
         $this->assertSame('GENISOIMAGE ISO 9660/HFS FILESYSTEM CREATOR (C) 1993 E.YOUNGDALE (C) 1997-2006 J.PEARSON/J.SCHILLING (C) 2006-2007 CDRKIT TEAM', $primaryVolumeDescriptor->appId);
-        $this->assertNotNull($primaryVolumeDescriptor->creationDate);
+        $this->assertInstanceOf(Carbon::class, $primaryVolumeDescriptor->creationDate);
         $this->assertSame(Carbon::create(2025, 1, 15, 16, 7, 41, 'Europe/Paris')?->toDateTimeString(), $primaryVolumeDescriptor->creationDate->toDateTimeString());
-        $this->assertNotNull($primaryVolumeDescriptor->modificationDate);
+        $this->assertInstanceOf(Carbon::class, $primaryVolumeDescriptor->modificationDate);
         $this->assertSame(Carbon::create(2025, 1, 15, 16, 7, 41, 'Europe/Paris')?->toDateTimeString(), $primaryVolumeDescriptor->modificationDate->toDateTimeString());
-        $this->assertNull($primaryVolumeDescriptor->expirationDate);
-        $this->assertNotNull($primaryVolumeDescriptor->effectiveDate);
+        $this->assertNotInstanceOf(Carbon::class, $primaryVolumeDescriptor->expirationDate);
+        $this->assertInstanceOf(Carbon::class, $primaryVolumeDescriptor->effectiveDate);
         $this->assertSame(Carbon::create(2025, 1, 15, 16, 7, 41, 'Europe/Paris')?->toDateTimeString(), $primaryVolumeDescriptor->effectiveDate->toDateTimeString());
 
         // check root directory
         $rootDirectory = $primaryVolumeDescriptor->rootDirectory;
         $this->assertSame('.', $rootDirectory->fileId);
         $this->assertTrue($rootDirectory->isDirectory());
-        $this->assertNotNull($rootDirectory->recordingDate);
+        $this->assertInstanceOf(Carbon::class, $rootDirectory->recordingDate);
         $this->assertSame(Carbon::create(2025, 1, 15, 16, 7, 30, 'Europe/Paris')?->toDateTimeString(), $rootDirectory->recordingDate->toDateTimeString());
 
         // check path table
@@ -284,10 +284,10 @@ class IsoFileTest extends TestCase
         $this->assertSame('DOS4.01', $primaryVolumeDescriptor->volumeId);
         $this->assertSame(848, $primaryVolumeDescriptor->volumeSpaceSize);
         $this->assertSame('', $primaryVolumeDescriptor->appId);
-        $this->assertNull($primaryVolumeDescriptor->creationDate);
-        $this->assertNull($primaryVolumeDescriptor->modificationDate);
-        $this->assertNull($primaryVolumeDescriptor->expirationDate);
-        $this->assertNull($primaryVolumeDescriptor->effectiveDate);
+        $this->assertNotInstanceOf(Carbon::class, $primaryVolumeDescriptor->creationDate);
+        $this->assertNotInstanceOf(Carbon::class, $primaryVolumeDescriptor->modificationDate);
+        $this->assertNotInstanceOf(Carbon::class, $primaryVolumeDescriptor->expirationDate);
+        $this->assertNotInstanceOf(Carbon::class, $primaryVolumeDescriptor->effectiveDate);
 
         /** @var Boot $bootDescriptor */
         $bootDescriptor = $isoFile->descriptors[Type::BOOT_RECORD_DESC];
@@ -312,10 +312,10 @@ class IsoFileTest extends TestCase
         $this->assertSame(848, $supplementaryVolumeDescriptor->volumeSpaceSize);
         $this->assertSame('', $supplementaryVolumeDescriptor->appId);
         $this->assertSame(3, $supplementaryVolumeDescriptor->jolietLevel);
-        $this->assertNull($supplementaryVolumeDescriptor->creationDate);
-        $this->assertNull($supplementaryVolumeDescriptor->modificationDate);
-        $this->assertNull($supplementaryVolumeDescriptor->expirationDate);
-        $this->assertNull($supplementaryVolumeDescriptor->effectiveDate);
+        $this->assertNotInstanceOf(Carbon::class, $supplementaryVolumeDescriptor->creationDate);
+        $this->assertNotInstanceOf(Carbon::class, $supplementaryVolumeDescriptor->modificationDate);
+        $this->assertNotInstanceOf(Carbon::class, $supplementaryVolumeDescriptor->expirationDate);
+        $this->assertNotInstanceOf(Carbon::class, $supplementaryVolumeDescriptor->effectiveDate);
     }
 
     public function testDescriptorsIso9660HfsPartIso(): void
