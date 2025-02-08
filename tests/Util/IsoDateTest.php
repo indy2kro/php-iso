@@ -30,7 +30,7 @@ class IsoDateTest extends TestCase
 
         $date = IsoDate::init7($buffer, $offset);
 
-        $this->assertNull($date);
+        $this->assertNotInstanceOf(Carbon::class, $date);
         $this->assertSame(7, $offset);
     }
 
@@ -39,7 +39,7 @@ class IsoDateTest extends TestCase
         $buffer = array_map('ord', str_split('2023051510304516')); // Represents 2023-05-15 10:30:45.16 UTC
         $offset = 0;
         $expectedDate = Carbon::create(2023, 5, 15, 10, 30, 45, 0);
-        $this->assertNotNull($expectedDate);
+        $this->assertInstanceOf(Carbon::class, $expectedDate);
         $expectedDate->addMilliseconds(16);
 
         $date = IsoDate::init17($buffer, $offset);
@@ -56,7 +56,7 @@ class IsoDateTest extends TestCase
 
         $date = IsoDate::init17($buffer, $offset);
 
-        $this->assertNull($date);
+        $this->assertNotInstanceOf(Carbon::class, $date);
         $this->assertSame(17, $offset);
     }
 }
