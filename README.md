@@ -1,6 +1,6 @@
 # PHP ISO Library
 
-[![codecov](https://codecov.io/gh/indy2kro/php-iso/graph/badge.svg?token=NBj76nYtmB)](https://codecov.io/gh/indy2kro/php-iso) [![Tests](https://github.com/indy2kro/php-iso/actions/workflows/tests.yml/badge.svg)](https://github.com/indy2kro/php-iso/actions/workflows/tests.yml)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/indy2kro/php-iso/badges/quality-score.png?b=main)](https://scrutinizer-ci.com/g/indy2kro/php-iso/?branch=main) [![codecov](https://codecov.io/gh/indy2kro/php-iso/graph/badge.svg?token=NBj76nYtmB)](https://codecov.io/gh/indy2kro/php-iso) [![Tests](https://github.com/indy2kro/php-iso/actions/workflows/tests.yml/badge.svg)](https://github.com/indy2kro/php-iso/actions/workflows/tests.yml)
 
 PHP Library used to read metadata and extract information from ISO files based on [php-iso-file](https://github.com/php-classes/php-iso-file)
 
