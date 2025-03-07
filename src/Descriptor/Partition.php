@@ -50,7 +50,7 @@ class Partition extends Descriptor
         $this->volPartitionSize = Buffer::readMSB($this->bytes, 8, $offset);
 
         // free some space...
-        unset($this->bytes);
+        $this->bytes = null;
         unset($unused);
     }
 }

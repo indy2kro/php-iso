@@ -37,6 +37,6 @@ class Boot extends Descriptor
         $this->bootCatalogLocation = Buffer::readLSB($this->bytes, 4, $offset);
 
         // free some space...
-        unset($this->bytes);
+        $this->bytes = null;
     }
 }

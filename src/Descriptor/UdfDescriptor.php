@@ -14,6 +14,6 @@ abstract class UdfDescriptor extends Descriptor
         // TODO - add UDF processing
 
         // free some space...
-        unset($this->bytes);
+        $this->bytes = null;
     }
 }

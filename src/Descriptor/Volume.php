@@ -116,7 +116,7 @@ abstract class Volume extends Descriptor
         $offset++;
 
         // free some space...
-        unset($this->bytes);
+        $this->bytes = null;
         unset($unused);
     }
 

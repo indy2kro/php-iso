@@ -15,6 +15,6 @@ class Terminator extends Descriptor
     public function init(IsoFile $isoFile, int &$offset): void
     {
         // free some space...
-        unset($this->bytes);
+        $this->bytes = null;
     }
 }
