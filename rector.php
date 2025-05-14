@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Rector\Config\RectorConfig;
 use Rector\PHPUnit\Set\PHPUnitSetList;
 use Rector\TypeDeclaration\Rector\ClassMethod\AddVoidReturnTypeWhereNoReturnRector;
+use Rector\PHPUnit\PHPUnit100\Rector\Class_\ParentTestClassConstructorRector;
 
 return RectorConfig::configure()
     ->withPaths([
@@ -23,6 +24,9 @@ return RectorConfig::configure()
             PHPUnitSetList::PHPUNIT_CODE_QUALITY,
         ]
     )
+    ->withSkip([
+        ParentTestClassConstructorRector::class
+    ])
     ->withRules([
         AddVoidReturnTypeWhereNoReturnRector::class,
     ]);
