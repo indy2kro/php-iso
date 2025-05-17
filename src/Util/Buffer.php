@@ -40,6 +40,10 @@ class Buffer
 
         if ($supplementary) {
             $string = mb_convert_encoding($string, 'UTF-8', 'UTF-16');
+
+            if ($string === false) {
+                throw new Exception('Failed to convert supplementary string');
+            }
         }
 
         $offset += $length;
