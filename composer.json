@@ -8,7 +8,7 @@
         "image"
     ],
     "homepage" : "https://github.com/indy2kro/php-iso",
-    "license" : "GPL-2.0",
+    "license" : "GPL-2.0-or-later",
     "require" : {
         "php": ">=8.2",
         "ext-mbstring": "*",
@@ -36,6 +36,9 @@
             "dealerdirect/phpcodesniffer-composer-installer": true
         },
         "optimize-autoloader": true,
+        "platform": {
+          "php": "8.2.0"
+        },
         "sort-packages": true
     },
     "bin": [

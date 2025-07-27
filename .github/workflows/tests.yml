@@ -58,6 +58,9 @@ jobs:
         - name: Update Dependencies with latest stable
           run: composer update --no-progress
 
+        - name: Validate composer.json
+          run: composer validate --strict
+
         - name: Code style test
           run: ./vendor/bin/phpcs
 
