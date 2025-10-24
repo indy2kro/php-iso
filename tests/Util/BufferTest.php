@@ -19,7 +19,7 @@ class BufferTest extends TestCase
 
     public function testGetStringValid(): void
     {
-        $buffer = array_map('ord', str_split('HelloWorld'));
+        $buffer = array_map(ord(...), str_split('HelloWorld'));
         $offset = 0;
         $result = Buffer::getString($buffer, 5, $offset);
         $this->assertSame('Hello', $result);
@@ -36,7 +36,7 @@ class BufferTest extends TestCase
 
     public function testReadAString(): void
     {
-        $buffer = array_map('ord', str_split('HelloWorld'));
+        $buffer = array_map(ord(...), str_split('HelloWorld'));
         $offset = 0;
         $result = Buffer::readAString($buffer, 5, $offset);
         $this->assertSame('Hello', $result);
@@ -45,7 +45,7 @@ class BufferTest extends TestCase
 
     public function testReadDString(): void
     {
-        $buffer = array_map('ord', str_split('HelloWorld'));
+        $buffer = array_map(ord(...), str_split('HelloWorld'));
         $offset = 0;
         $result = Buffer::readDString($buffer, 5, $offset);
         $this->assertSame('Hello', $result);
