@@ -36,7 +36,7 @@ class IsoDateTest extends TestCase
 
     public function testInit17ValidDate(): void
     {
-        $buffer = array_map('ord', str_split('2023051510304516')); // Represents 2023-05-15 10:30:45.16 UTC
+        $buffer = array_map(ord(...), str_split('2023051510304516')); // Represents 2023-05-15 10:30:45.16 UTC
         $offset = 0;
         $expectedDate = Carbon::create(2023, 5, 15, 10, 30, 45, 0);
         $this->assertInstanceOf(Carbon::class, $expectedDate);
@@ -51,7 +51,7 @@ class IsoDateTest extends TestCase
 
     public function testInit17InvalidDate(): void
     {
-        $buffer = array_map('ord', str_split('0000000000000000')); // Invalid date
+        $buffer = array_map(ord(...), str_split('0000000000000000')); // Invalid date
         $offset = 0;
 
         $date = IsoDate::init17($buffer, $offset);
