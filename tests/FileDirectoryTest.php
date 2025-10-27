@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 use PhpIso\FileDirectory;
 use PhpIso\IsoFile;
 
-class FileDirectoryTest extends TestCase
+final class FileDirectoryTest extends TestCase
 {
     public function testInitWithInvalidBuffer(): void
     {

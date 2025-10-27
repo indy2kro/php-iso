@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 use PhpIso\Util\IsoDate;
 use Carbon\Carbon;
 
-class IsoDateTest extends TestCase
+final class IsoDateTest extends TestCase
 {
     public function testInit7ValidDate(): void
     {

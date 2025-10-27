@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 use PhpIso\Util\Buffer;
 use PhpIso\Exception;
 
-class BufferTest extends TestCase
+final class BufferTest extends TestCase
 {
     public function testAlign(): void
     {
