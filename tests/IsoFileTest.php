@@ -18,7 +18,7 @@ use PhpIso\Descriptor\SupplementaryVolume;
 use PhpIso\PathTableRecord;
 use PhpIso\FileDirectory;
 
-class IsoFileTest extends TestCase
+final class IsoFileTest extends TestCase
 {
     public function testConstructorFileDoesNotExist(): void
     {

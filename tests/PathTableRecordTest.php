@@ -9,7 +9,7 @@ use PhpIso\PathTableRecord;
 use PhpIso\Util\Buffer;
 use PhpIso\Exception;
 
-class PathTableRecordTest extends TestCase
+final class PathTableRecordTest extends TestCase
 {
     public function testSetDirectoryNumber(): void
     {
