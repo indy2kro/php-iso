@@ -10,7 +10,7 @@
     "homepage" : "https://github.com/indy2kro/php-iso",
     "license" : "GPL-2.0-or-later",
     "require" : {
-        "php": ">=8.2",
+        "php": ">=8.3",
         "ext-mbstring": "*",
         "nesbot/carbon": "^3.8"
     },
@@ -37,7 +37,7 @@
         },
         "optimize-autoloader": true,
         "platform": {
-          "php": "8.2.0"
+          "php": "8.3.0"
         },
         "sort-packages": true
     },
