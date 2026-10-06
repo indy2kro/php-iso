@@ -152,11 +152,18 @@ final class IsoBuilder
     /**
      * A directory record. The identifier is written as is (bytes), the first one of "\0" / "\1" are "." / ".."
      */
-    public static function record(string $id, int $location, int $size, int $flags = 0): string
+    public static function record(string $id, int $location, int $size, int $flags = 0, string $systemUse = ''): string
     {
         $length = 33 + strlen($id);
         $padding = $length % 2 === 1 ? "\0" : '';
         $length += strlen($padding);
+
+        if ($systemUse !== '') {
+            // the system use area also keeps the record length even
+            $systemUse .= (($length + strlen($systemUse)) % 2 === 1) ? "\0" : '';
+            $padding .= $systemUse;
+            $length += strlen($systemUse);
+        }
 
         return chr($length) . chr(0) . self::bbo32($location) . self::bbo32($size)
             . chr(125) . chr(1) . chr(1) . chr(0) . chr(0) . chr(0) . chr(0)

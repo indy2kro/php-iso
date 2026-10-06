@@ -25,7 +25,16 @@ final readonly class IsoEntry
          * @var list<array{int, int}>
          */
         public array $extents = [],
+        /**
+         * Rock Ridge attributes (POSIX mode, owner, symbolic link target), null when the volume has none
+         */
+        public ?RockRidgeInfo $rockRidge = null,
     ) {
+    }
+
+    public function isSymlink(): bool
+    {
+        return $this->rockRidge instanceof RockRidgeInfo && $this->rockRidge->isSymlink();
     }
 
     /**
@@ -52,6 +61,10 @@ final readonly class IsoEntry
             'date' => $this->recordingDate?->toIso8601String(),
             'hidden' => $this->isHidden,
             'extents' => count($this->getExtents()),
+            'mode' => $this->rockRidge?->mode,
+            'uid' => $this->rockRidge?->uid,
+            'gid' => $this->rockRidge?->gid,
+            'symlink' => $this->rockRidge?->symlink,
         ];
     }
 }
