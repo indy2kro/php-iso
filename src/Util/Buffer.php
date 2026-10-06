@@ -26,7 +26,7 @@ class Buffer
      *
      * @param array<int, int> $buffer
      */
-    public static function getString(array &$buffer, int $length, int &$offset = 0, bool $supplementary = false): string
+    public static function getString(array &$buffer, int $length, int &$offset = 0, bool $supplementary = false, bool $asciiFallback = false): string
     {
         $string = '';
         for ($i = $offset; $i < $offset + $length; $i++) {
@@ -36,6 +36,11 @@ class Buffer
             if ($supplementary || $buffer[$i] !== 0) {
                 $string .= chr($buffer[$i]);
             }
+        }
+
+        // some writers store plain ASCII in Joliet strings: genuine UTF-16BE text always contains NUL high bytes
+        if ($supplementary && $asciiFallback && $string !== '' && preg_match('/^[\x20-\x7e]+$/', $string) === 1) {
+            $supplementary = false;
         }
 
         if ($supplementary) {
@@ -51,9 +56,9 @@ class Buffer
      *
      * @param array<int, int> $buffer
      */
-    public static function readAString(array &$buffer, int $length, int &$offset = 0, bool $supplementary = false): string
+    public static function readAString(array &$buffer, int $length, int &$offset = 0, bool $supplementary = false, bool $asciiFallback = false): string
     {
-        return self::getString($buffer, $length, $offset, $supplementary);
+        return self::getString($buffer, $length, $offset, $supplementary, $asciiFallback);
     }
 
     /**
@@ -61,9 +66,9 @@ class Buffer
      *
      * @param array<int, int> $buffer
      */
-    public static function readDString(array &$buffer, int $length, int &$offset = 0, bool $supplementary = false): string
+    public static function readDString(array &$buffer, int $length, int &$offset = 0, bool $supplementary = false, bool $asciiFallback = false): string
     {
-        return self::getString($buffer, $length, $offset, $supplementary);
+        return self::getString($buffer, $length, $offset, $supplementary, $asciiFallback);
     }
 
     /**

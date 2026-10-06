@@ -18,7 +18,7 @@ use PhpIso\Descriptor\SupplementaryVolume;
 use PhpIso\PathTableRecord;
 use PhpIso\FileDirectory;
 
-final class IsoFileTestUdf extends TestCase
+final class IsoFileUdfTest extends TestCase
 {
     #[DataProvider('isoFilesDataProvider')]
     public function testConstructorExistingUdfFile(string $testFile, int $descriptorCount): void

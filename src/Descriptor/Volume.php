@@ -47,16 +47,16 @@ abstract class Volume extends Descriptor
             return;
         }
 
+        $supplementary = ($this->type === Type::SUPPLEMENTARY_VOLUME_DESC);
+
         // unused first entry
-        $unused = $this->bytes[$offset];
+        Buffer::getRawBytes($this->bytes, 1, $offset);
 
-        $offset++;
-
-        $this->systemId = trim(Buffer::readAString($this->bytes, 32, $offset, ($this->type === Type::SUPPLEMENTARY_VOLUME_DESC)));
-        $this->volumeId = trim(Buffer::readDString($this->bytes, 32, $offset, ($this->type === Type::SUPPLEMENTARY_VOLUME_DESC)));
+        $this->systemId = trim(Buffer::readAString($this->bytes, 32, $offset, $supplementary, true));
+        $this->volumeId = trim(Buffer::readDString($this->bytes, 32, $offset, $supplementary, true));
 
         // unused
-        $unused = Buffer::getBytes($this->bytes, 8, $offset);
+        Buffer::getRawBytes($this->bytes, 8, $offset);
 
         $this->volumeSpaceSize = Buffer::readBBO($this->bytes, 8, $offset);
 
@@ -94,15 +94,15 @@ abstract class Volume extends Descriptor
         $this->rootDirectory->jolietLevel = $this->jolietLevel;
         $this->rootDirectory->init($this->bytes, $offset, ($this->type === Type::SUPPLEMENTARY_VOLUME_DESC));
 
-        $this->volumeSetId = trim(Buffer::readDString($this->bytes, 128, $offset, ($this->type === Type::SUPPLEMENTARY_VOLUME_DESC)));
-        $this->publisherId = trim(Buffer::readAString($this->bytes, 128, $offset, ($this->type === Type::SUPPLEMENTARY_VOLUME_DESC)));
-        $this->preparerId = trim(Buffer::readAString($this->bytes, 128, $offset, ($this->type === Type::SUPPLEMENTARY_VOLUME_DESC)));
-        $this->appId = trim(Buffer::readAString($this->bytes, 128, $offset, ($this->type === Type::SUPPLEMENTARY_VOLUME_DESC)));
+        $this->volumeSetId = trim(Buffer::readDString($this->bytes, 128, $offset, $supplementary, true));
+        $this->publisherId = trim(Buffer::readAString($this->bytes, 128, $offset, $supplementary, true));
+        $this->preparerId = trim(Buffer::readAString($this->bytes, 128, $offset, $supplementary, true));
+        $this->appId = trim(Buffer::readAString($this->bytes, 128, $offset, $supplementary, true));
 
-        $this->copyrightFileId = trim(Buffer::readDString($this->bytes, 37, $offset, ($this->type === Type::SUPPLEMENTARY_VOLUME_DESC)));
-        $this->abstractFileId = trim(Buffer::readDString($this->bytes, 37, $offset, ($this->type === Type::SUPPLEMENTARY_VOLUME_DESC)));
+        $this->copyrightFileId = trim(Buffer::readDString($this->bytes, 37, $offset, $supplementary, true));
+        $this->abstractFileId = trim(Buffer::readDString($this->bytes, 37, $offset, $supplementary, true));
 
-        $this->bibliographicFileId = trim(Buffer::readDString($this->bytes, 37, $offset, ($this->type === Type::SUPPLEMENTARY_VOLUME_DESC)));
+        $this->bibliographicFileId = trim(Buffer::readDString($this->bytes, 37, $offset, $supplementary, true));
 
         $this->creationDate = IsoDate::init17($this->bytes, $offset);
 
@@ -117,7 +117,6 @@ abstract class Volume extends Descriptor
 
         // free some space...
         $this->bytes = null;
-        unset($unused);
     }
 
     /**

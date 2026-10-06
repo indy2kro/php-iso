@@ -40,8 +40,7 @@ class Partition extends Descriptor
             return;
         }
 
-        $unused = $this->bytes[$offset];
-        $offset++;
+        Buffer::getRawBytes($this->bytes, 1, $offset);
 
         $this->systemID = Buffer::readAString($this->bytes, 32, $offset);
         $this->volPartitionID = Buffer::readDString($this->bytes, 32, $offset);
@@ -51,6 +50,5 @@ class Partition extends Descriptor
 
         // free some space...
         $this->bytes = null;
-        unset($unused);
     }
 }
