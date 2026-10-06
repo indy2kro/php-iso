@@ -18,7 +18,7 @@ Basic concepts
   - upon initialization of the `IsoFile` object, the descriptors will be populated automatically
 - Volume descriptors contain path table inside which can be loaded using `loadTable`
   - `PathTableRecord` - object which contains the record information for a file/directory
-- Each class contains various properties which can be used to interact with them, most of them `public`
+- Each class contains various properties which can be used to interact with them, they are `public readonly`: the parsed structures are immutable and fully initialised when the object is created
 
 Features
 ------------

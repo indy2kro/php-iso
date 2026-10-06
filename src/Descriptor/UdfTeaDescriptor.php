@@ -6,6 +6,6 @@ namespace PhpIso\Descriptor;
 
 class UdfTeaDescriptor extends UdfDescriptor
 {
-    public string $name = 'UDF TEA descriptor';
-    protected int $type = Type::UDF_TEA_VOLUME_DESC;
+    protected const string NAME = 'UDF TEA descriptor';
+    protected const int TYPE = Type::UDF_TEA_VOLUME_DESC;
 }

@@ -6,6 +6,6 @@ namespace PhpIso\Descriptor;
 
 class UdfBeaDescriptor extends UdfDescriptor
 {
-    public string $name = 'UDF BEA01 descriptor';
-    protected int $type = Type::UDF_BEA_VOLUME_DESC;
+    protected const string NAME = 'UDF BEA01 descriptor';
+    protected const int TYPE = Type::UDF_BEA_VOLUME_DESC;
 }

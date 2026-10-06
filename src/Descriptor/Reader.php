@@ -58,9 +58,6 @@ class Reader
             };
         }
 
-        $descriptor = Factory::create($type, $stdId, $version, $bytes);
-        $descriptor->init($this->isoFile, $offset);
-
-        return $descriptor;
+        return Factory::create($type, $stdId, $version, $bytes, $offset);
     }
 }

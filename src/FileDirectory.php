@@ -57,141 +57,136 @@ class FileDirectory
      */
     public const SECTOR_SIZE = 2048;
 
-    /**
-     * The length of the "Directory Record"
-     */
-    public int $dirRecLength = 0;
+    private function __construct(
+        /**
+         * The length of the "Directory Record"
+         */
+        public readonly int $dirRecLength,
+        /**
+         * The length of the "Directory Record" extended attribute record
+         */
+        public readonly int $extendedAttrRecordLength,
+        /**
+         * Location of extents
+         */
+        public readonly int $location,
+        /**
+         * The length of the data (the content for a file, the "child file & folder for a directory...
+         */
+        public readonly int $dataLength,
+        /**
+         * The recording date
+         */
+        public readonly ?Carbon $recordingDate,
+        /**
+         * File (or folder) flags.
+         */
+        public readonly int $flags,
+        /**
+         * The File Unit Size
+         */
+        public readonly int $fileUnitSize,
+        /**
+         * The Interleave Gap Size
+         */
+        public readonly int $interleaveGapSize,
+        /**
+         * The ordinal number of the volume in the Volume Set
+         */
+        public readonly int $volumeSeqNum,
+        /**
+         * The length of the file identifier
+         */
+        public readonly int $fileIdLength,
+        /**
+         * The file identifier
+         */
+        public readonly string $fileId,
+        public readonly int $jolietLevel,
+        /**
+         * Raw system use area of the record (Rock Ridge / SUSP entries)
+         */
+        public readonly string $systemUse
+    ) {
+    }
 
     /**
-     * The length of the "Directory Record" extended attribute record
-     */
-    public int $extendedAttrRecordLength;
-
-    /**
-     * Location of extents
-     */
-    public int $location;
-
-    /**
-     * The length of the data (the content for a file, the "child file & folder for a directory...
-     */
-    public int $dataLength;
-
-    /**
-     * The recording date
-     */
-    public ?Carbon $recordingDate = null;
-
-    /**
-     * File (or folder) flags.
-     */
-    public int $flags;
-
-    /**
-     * The File Unit Size
-     */
-    public int $fileUnitSize;
-
-    /**
-     * The Interleave Gap Size
-     */
-    public int $interleaveGapSize;
-
-    /**
-     * The ordinal number of the volume in the Volume Set
-     */
-    public int $volumeSeqNum;
-
-    /**
-     * The length of the file identifier
-     */
-    public int $fileIdLength;
-
-    /**
-     * The file identifier
-     */
-    public string $fileId;
-
-    public int $jolietLevel = 0;
-
-    /**
-     * Raw system use area of the record (Rock Ridge / SUSP entries)
-     */
-    public string $systemUse = '';
-
-    /**
-     * Load the "Directory Record" from buffer
+     * Read a "Directory Record" from the buffer, moving the offset after it
      *
      * @param array<int, int> $buffer
+     *
+     * @return self|null null at the end of the records (no data, or a zero length record)
+     *
+     * @throws Exception when the record is corrupt
      */
-    public function init(array &$buffer, int &$offset, bool $supplementary = false): bool
+    public static function read(array &$buffer, int &$offset, bool $supplementary = false, int $jolietLevel = 0): ?self
     {
         $tmp = $offset;
 
         if (! isset($buffer[$tmp])) {
-            return false;
+            return null;
         }
 
-        $this->dirRecLength = $buffer[$tmp];
+        $dirRecLength = $buffer[$tmp];
         $tmp++;
-        if ($this->dirRecLength === 0) {
-            return false;
+        if ($dirRecLength === 0) {
+            return null;
         }
 
         // a record shorter than its fixed part, or running past the buffer, is corrupt
-        if ($this->dirRecLength < 34 || ! isset($buffer[$offset + $this->dirRecLength - 1])) {
-            throw new Exception('Invalid directory record length: ' . $this->dirRecLength);
+        if ($dirRecLength < 34 || ! isset($buffer[$offset + $dirRecLength - 1])) {
+            throw new Exception('Invalid directory record length: ' . $dirRecLength);
         }
 
-        $this->extendedAttrRecordLength = $buffer[$tmp];
+        $extendedAttrRecordLength = $buffer[$tmp];
         $tmp++;
 
-        $this->location = Buffer::readBBO($buffer, 8, $tmp);
-        $this->dataLength = Buffer::readBBO($buffer, 8, $tmp);
+        $location = Buffer::readBBO($buffer, 8, $tmp);
+        $dataLength = Buffer::readBBO($buffer, 8, $tmp);
 
-        $this->recordingDate = IsoDate::init7($buffer, $tmp);
+        $recordingDate = IsoDate::init7($buffer, $tmp);
 
-        $this->flags = $buffer[$tmp];
+        $flags = $buffer[$tmp];
         $tmp++;
-        $this->fileUnitSize = $buffer[$tmp];
+        $fileUnitSize = $buffer[$tmp];
         $tmp++;
-        $this->interleaveGapSize = $buffer[$tmp];
-        $tmp++;
-
-        $this->volumeSeqNum = Buffer::readBBO($buffer, 4, $tmp);
-
-        $this->fileIdLength = $buffer[$tmp];
+        $interleaveGapSize = $buffer[$tmp];
         $tmp++;
 
-        if ($this->fileIdLength === 1 && $buffer[$tmp] === 0) {
-            $this->fileId = '.';
+        $volumeSeqNum = Buffer::readBBO($buffer, 4, $tmp);
+
+        $fileIdLength = $buffer[$tmp];
+        $tmp++;
+
+        if ($fileIdLength === 1 && $buffer[$tmp] === 0) {
+            $fileId = '.';
             $tmp++;
-        } elseif ($this->fileIdLength === 1 && $buffer[$tmp] === 1) {
-            $this->fileId = '..';
+        } elseif ($fileIdLength === 1 && $buffer[$tmp] === 1) {
+            $fileId = '..';
             $tmp++;
         } else {
-            $this->fileId = Buffer::readDString($buffer, $this->fileIdLength, $tmp, $supplementary);
+            $fileId = Buffer::readDString($buffer, $fileIdLength, $tmp, $supplementary);
 
-            $pos = strpos($this->fileId, ';1');
-            if ($pos !== false && $pos === strlen($this->fileId) - 2) {
-                $this->fileId = substr($this->fileId, 0, strlen($this->fileId) - 2);
+            $pos = strpos($fileId, ';1');
+            if ($pos !== false && $pos === strlen($fileId) - 2) {
+                $fileId = substr($fileId, 0, strlen($fileId) - 2);
             }
 
-            $this->fileId = trim($this->fileId);
+            $fileId = trim($fileId);
         }
 
         // the system use area (SUSP / Rock Ridge) follows the identifier and its padding byte
-        $areaStart = $tmp + ($this->fileIdLength % 2 === 0 ? 1 : 0);
-        $areaEnd = $offset + $this->dirRecLength;
-        $this->systemUse = '';
+        $areaStart = $tmp + ($fileIdLength % 2 === 0 ? 1 : 0);
+        $areaEnd = $offset + $dirRecLength;
+        $systemUse = '';
         for ($i = $areaStart; $i < $areaEnd; $i++) {
-            $this->systemUse .= chr($buffer[$i]);
+            $systemUse .= chr($buffer[$i]);
         }
 
-        $offset += $this->dirRecLength;
-        return true;
-    }
+        $offset += $dirRecLength;
 
+        return new self($dirRecLength, $extendedAttrRecordLength, $location, $dataLength, $recordingDate, $flags, $fileUnitSize, $interleaveGapSize, $volumeSeqNum, $fileIdLength, $fileId, $jolietLevel, $systemUse);
+    }
     /**
      * Test if the "Directory Record" is hidden
      */
@@ -297,8 +292,16 @@ class FileDirectory
             /** @var array<int, int>|false $first */
             $first = unpack('C*', $string);
             $offset = 1;
-            $self = new self();
-            if ($first !== false && $self->init($first, $offset, $supplementary) && $self->dataLength > strlen($string)) {
+            $self = null;
+            if ($first !== false) {
+                try {
+                    $self = self::read($first, $offset, $supplementary, $jolietLevel);
+                } catch (Exception) {
+                    $self = null;
+                }
+            }
+
+            if ($self instanceof self && $self->dataLength > strlen($string)) {
                 $full = self::readAt($isoFile, $position, self::boundedLength($isoFile, $position, $self->dataLength));
                 if ($full !== false) {
                     $string = $full;
@@ -318,17 +321,14 @@ class FileDirectory
         $extents = [];
 
         while ($offset <= $total) {
-            $fdDesc = new self();
-            $fdDesc->jolietLevel = $jolietLevel;
-
             try {
-                $found = $fdDesc->init($bytes, $offset, $supplementary);
+                $fdDesc = self::read($bytes, $offset, $supplementary, $jolietLevel);
             } catch (Exception) {
                 // corrupt record: keep what was parsed so far
                 break;
             }
 
-            if ($found) {
+            if ($fdDesc instanceof self) {
                 $extents[] = $fdDesc;
                 continue;
             }

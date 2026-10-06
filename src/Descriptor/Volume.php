@@ -21,56 +21,59 @@ abstract class Volume extends Descriptor implements FileSystem
 {
     use BrowsesEntries;
 
-    public string $systemId;
-    public string $volumeId;
-    public int $volumeSpaceSize;
-    public int $volumeSetSize;
-    public int $volumeSeqNum;
-    public int $blockSize;
-    public int $pathTableSize;
-    public int $lPathTablePos;
-    public int $optLPathTablePos;
-    public int $mPathTablePos;
-    public int $optMPathTablePos;
-    public FileDirectory $rootDirectory;
-    public string $volumeSetId;
-    public string $publisherId;
-    public string $preparerId;
-    public string $appId;
-    public string $copyrightFileId;
-    public string $abstractFileId;
-    public string $bibliographicFileId;
-    public ?Carbon $creationDate = null;
-    public ?Carbon $modificationDate = null;
-    public ?Carbon $expirationDate = null;
-    public ?Carbon $effectiveDate = null;
-    public int $fileStructureVersion;
-    public int $jolietLevel = 0;
+    public readonly string $systemId;
+    public readonly string $volumeId;
+    public readonly int $volumeSpaceSize;
+    public readonly int $volumeSetSize;
+    public readonly int $volumeSeqNum;
+    public readonly int $blockSize;
+    public readonly int $pathTableSize;
+    public readonly int $lPathTablePos;
+    public readonly int $optLPathTablePos;
+    public readonly int $mPathTablePos;
+    public readonly int $optMPathTablePos;
+    public readonly FileDirectory $rootDirectory;
+    public readonly string $volumeSetId;
+    public readonly string $publisherId;
+    public readonly string $preparerId;
+    public readonly string $appId;
+    public readonly string $copyrightFileId;
+    public readonly string $abstractFileId;
+    public readonly string $bibliographicFileId;
+    public readonly ?Carbon $creationDate;
+    public readonly ?Carbon $modificationDate;
+    public readonly ?Carbon $expirationDate;
+    public readonly ?Carbon $effectiveDate;
+    public readonly int $fileStructureVersion;
+    public readonly int $jolietLevel;
 
-    public function init(IsoFile $isoFile, int &$offset): void
+    /**
+     * @param array<int, int> $bytes the descriptor sector
+     * @param int $offset position after the descriptor header, moved after the parsed fields
+     */
+    public function __construct(string $stdId, int $version, array $bytes, int &$offset)
     {
-        if ($this->bytes === null) {
-            return;
-        }
+        parent::__construct($stdId, $version);
 
-        $supplementary = ($this->type === Type::SUPPLEMENTARY_VOLUME_DESC);
+        $supplementary = (static::TYPE === Type::SUPPLEMENTARY_VOLUME_DESC);
 
         // unused first entry
-        Buffer::getRawBytes($this->bytes, 1, $offset);
+        Buffer::getRawBytes($bytes, 1, $offset);
 
-        $this->systemId = trim(Buffer::readAString($this->bytes, 32, $offset, $supplementary, true));
-        $this->volumeId = trim(Buffer::readDString($this->bytes, 32, $offset, $supplementary, true));
+        $this->systemId = trim(Buffer::readAString($bytes, 32, $offset, $supplementary, true));
+        $this->volumeId = trim(Buffer::readDString($bytes, 32, $offset, $supplementary, true));
 
         // unused
-        Buffer::getRawBytes($this->bytes, 8, $offset);
+        Buffer::getRawBytes($bytes, 8, $offset);
 
-        $this->volumeSpaceSize = Buffer::readBBO($this->bytes, 8, $offset);
+        $this->volumeSpaceSize = Buffer::readBBO($bytes, 8, $offset);
 
         // joliet escape sequence
-        $jolietEscapeSequence = Buffer::getRawBytes($this->bytes, 32, $offset);
+        $jolietEscapeSequence = Buffer::getRawBytes($bytes, 32, $offset);
 
         // Joliet Detection - If this is a Supplementary Volume Descriptor
-        if ($this->type === Type::SUPPLEMENTARY_VOLUME_DESC) {
+        $jolietLevel = 0;
+        if (static::TYPE === Type::SUPPLEMENTARY_VOLUME_DESC) {
             // Joliet escape sequences: %/@ (level 1), %/C (level 2), %/E (level 3)
             $jolietLevels = [
                 1 => [0x25, 0x2F, 0x40],
@@ -80,49 +83,46 @@ abstract class Volume extends Descriptor implements FileSystem
 
             foreach ($jolietLevels as $level => $sequence) {
                 if (array_slice($jolietEscapeSequence, 0, 3) === $sequence) {
-                    $this->jolietLevel = $level;
+                    $jolietLevel = $level;
                     break;
                 }
             }
         }
 
-        $this->volumeSetSize = Buffer::readBBO($this->bytes, 4, $offset);
-        $this->volumeSeqNum = Buffer::readBBO($this->bytes, 4, $offset);
-        $this->blockSize = Buffer::readBBO($this->bytes, 4, $offset);
-        $this->pathTableSize = Buffer::readBBO($this->bytes, 8, $offset);
+        $this->jolietLevel = $jolietLevel;
 
-        $this->lPathTablePos = Buffer::readLSB($this->bytes, 4, $offset);
-        $this->optLPathTablePos = Buffer::readLSB($this->bytes, 4, $offset);
-        $this->mPathTablePos = Buffer::readMSB($this->bytes, 4, $offset);
-        $this->optMPathTablePos = Buffer::readMSB($this->bytes, 4, $offset);
+        $this->volumeSetSize = Buffer::readBBO($bytes, 4, $offset);
+        $this->volumeSeqNum = Buffer::readBBO($bytes, 4, $offset);
+        $this->blockSize = Buffer::readBBO($bytes, 4, $offset);
+        $this->pathTableSize = Buffer::readBBO($bytes, 8, $offset);
 
-        $this->rootDirectory = new FileDirectory();
-        $this->rootDirectory->jolietLevel = $this->jolietLevel;
-        $this->rootDirectory->init($this->bytes, $offset, ($this->type === Type::SUPPLEMENTARY_VOLUME_DESC));
+        $this->lPathTablePos = Buffer::readLSB($bytes, 4, $offset);
+        $this->optLPathTablePos = Buffer::readLSB($bytes, 4, $offset);
+        $this->mPathTablePos = Buffer::readMSB($bytes, 4, $offset);
+        $this->optMPathTablePos = Buffer::readMSB($bytes, 4, $offset);
 
-        $this->volumeSetId = trim(Buffer::readDString($this->bytes, 128, $offset, $supplementary, true));
-        $this->publisherId = trim(Buffer::readAString($this->bytes, 128, $offset, $supplementary, true));
-        $this->preparerId = trim(Buffer::readAString($this->bytes, 128, $offset, $supplementary, true));
-        $this->appId = trim(Buffer::readAString($this->bytes, 128, $offset, $supplementary, true));
+        $this->rootDirectory = FileDirectory::read($bytes, $offset, $supplementary, $jolietLevel) ?? throw new Exception('Missing root directory record in the volume descriptor');
 
-        $this->copyrightFileId = trim(Buffer::readDString($this->bytes, 37, $offset, $supplementary, true));
-        $this->abstractFileId = trim(Buffer::readDString($this->bytes, 37, $offset, $supplementary, true));
+        $this->volumeSetId = trim(Buffer::readDString($bytes, 128, $offset, $supplementary, true));
+        $this->publisherId = trim(Buffer::readAString($bytes, 128, $offset, $supplementary, true));
+        $this->preparerId = trim(Buffer::readAString($bytes, 128, $offset, $supplementary, true));
+        $this->appId = trim(Buffer::readAString($bytes, 128, $offset, $supplementary, true));
 
-        $this->bibliographicFileId = trim(Buffer::readDString($this->bytes, 37, $offset, $supplementary, true));
+        $this->copyrightFileId = trim(Buffer::readDString($bytes, 37, $offset, $supplementary, true));
+        $this->abstractFileId = trim(Buffer::readDString($bytes, 37, $offset, $supplementary, true));
 
-        $this->creationDate = IsoDate::init17($this->bytes, $offset);
+        $this->bibliographicFileId = trim(Buffer::readDString($bytes, 37, $offset, $supplementary, true));
 
-        $this->modificationDate = IsoDate::init17($this->bytes, $offset);
+        $this->creationDate = IsoDate::init17($bytes, $offset);
 
-        $this->expirationDate = IsoDate::init17($this->bytes, $offset);
+        $this->modificationDate = IsoDate::init17($bytes, $offset);
 
-        $this->effectiveDate = IsoDate::init17($this->bytes, $offset);
+        $this->expirationDate = IsoDate::init17($bytes, $offset);
 
-        $this->fileStructureVersion = $this->bytes[$offset];
+        $this->effectiveDate = IsoDate::init17($bytes, $offset);
+
+        $this->fileStructureVersion = $bytes[$offset];
         $offset++;
-
-        // free some space...
-        $this->bytes = null;
     }
 
     /**
@@ -141,7 +141,7 @@ abstract class Volume extends Descriptor implements FileSystem
             return;
         }
 
-        $supplementary = ($this->type === Type::SUPPLEMENTARY_VOLUME_DESC);
+        $supplementary = (static::TYPE === Type::SUPPLEMENTARY_VOLUME_DESC);
         $visited = [$this->rootDirectory->location => true];
 
         // explicit stack instead of recursion: a hostile image cannot exhaust the PHP stack
@@ -343,17 +343,10 @@ abstract class Volume extends Descriptor implements FileSystem
 
         $offset = 1;
         $dirNum = 1;
-        $ptRec = new PathTableRecord();
-        $supplementary = ($this->type === Type::SUPPLEMENTARY_VOLUME_DESC);
-        $bres = $ptRec->init($bytes, $offset, $supplementary, $littleEndian);
-        while ($bres === true) {
-            $ptRec->setDirectoryNumber($dirNum);
-
+        $supplementary = (static::TYPE === Type::SUPPLEMENTARY_VOLUME_DESC);
+        while (($ptRec = PathTableRecord::read($bytes, $offset, $dirNum, $supplementary, $littleEndian)) instanceof PathTableRecord) {
             $pathTable[$dirNum] = $ptRec;
             $dirNum++;
-
-            $ptRec = new PathTableRecord();
-            $bres = $ptRec->init($bytes, $offset, $supplementary, $littleEndian);
         }
 
         return $pathTable;

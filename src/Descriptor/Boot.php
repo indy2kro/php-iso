@@ -13,18 +13,18 @@ class Boot extends Descriptor
     /**
      * Specify an identification of a system which can recognize and act upon the content of the Boot Identifier and Boot System Use fields in the Boot Record
      */
-    public string $bootSysId = '';
+    public readonly string $bootSysId;
 
-    public int $bootCatalogLocation;
+    public readonly int $bootCatalogLocation;
 
     /**
      * An identification of the boot system specified in the Boot System Use field of the Boot Record.
      */
-    public string $bootId = '';
+    public readonly string $bootId;
 
-    public string $name = 'Boot volume descriptor';
+    protected const string NAME = 'Boot volume descriptor';
 
-    protected int $type = Type::BOOT_RECORD_DESC;
+    protected const int TYPE = Type::BOOT_RECORD_DESC;
 
     public const EL_TORITO_ID = 'EL TORITO SPECIFICATION';
 
@@ -50,17 +50,16 @@ class Boot extends Descriptor
         return BootCatalog::load($isoFile, $this->bootCatalogLocation);
     }
 
-    public function init(IsoFile $isoFile, int &$offset): void
+    /**
+     * @param array<int, int> $bytes the descriptor sector
+     * @param int $offset position after the descriptor header, moved after the parsed fields
+     */
+    public function __construct(string $stdId, int $version, array $bytes, int &$offset)
     {
-        if ($this->bytes === null) {
-            return;
-        }
+        parent::__construct($stdId, $version);
 
-        $this->bootSysId = Buffer::getString($this->bytes, 32, $offset);
-        $this->bootId = Buffer::getString($this->bytes, 32, $offset);
-        $this->bootCatalogLocation = Buffer::readLSB($this->bytes, 4, $offset);
-
-        // free some space...
-        $this->bytes = null;
+        $this->bootSysId = Buffer::getString($bytes, 32, $offset);
+        $this->bootId = Buffer::getString($bytes, 32, $offset);
+        $this->bootCatalogLocation = Buffer::readLSB($bytes, 4, $offset);
     }
 }

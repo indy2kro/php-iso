@@ -26,7 +26,7 @@ class IsoFile
      *
      * @var array<int, Descriptor>
      */
-    public array $additionalDescriptors = [];
+    public readonly array $additionalDescriptors;
 
     private ?UdfFileSystem $udf = null;
 
@@ -35,7 +35,7 @@ class IsoFile
     /**
      * @var array<int, Descriptor>
      */
-    public array $descriptors = [];
+    public readonly array $descriptors;
 
     /**
      * @var ?resource
@@ -46,7 +46,7 @@ class IsoFile
     {
         $this->openFile();
 
-        $this->processFile();
+        [$this->descriptors, $this->additionalDescriptors] = $this->readDescriptors();
     }
 
     public function __destruct()
@@ -235,11 +235,21 @@ class IsoFile
         $this->fileHandle = null;
     }
 
-    protected function processFile(): void
+    /**
+     * Read the volume descriptors that follow the system area
+     *
+     * @return array{array<int, Descriptor>, array<int, Descriptor>} descriptors by type, then the duplicated ones
+     */
+    protected function readDescriptors(): array
     {
         if ($this->seek(16 * 2048, SEEK_SET) === -1) {
-            return;
+            return [[], []];
         }
+
+        /** @var array<int, Descriptor> $descriptors */
+        $descriptors = [];
+        /** @var array<int, Descriptor> $additional */
+        $additional = [];
 
         $reader = new Reader($this);
 
@@ -252,11 +262,11 @@ class IsoFile
                     throw new Exception('Finished reading');
                 }
 
-                if (isset($this->descriptors[$descriptor->getType()]) && ! ($descriptor instanceof UdfDescriptor)) {
+                if (isset($descriptors[$descriptor->getType()]) && ! ($descriptor instanceof UdfDescriptor)) {
                     // e.g. an enhanced volume descriptor next to a Joliet one: keep the first, do not stop reading
-                    $this->additionalDescriptors[] = $descriptor;
+                    $additional[] = $descriptor;
                 } else {
-                    $this->descriptors[$descriptor->getType()] = $descriptor;
+                    $descriptors[$descriptor->getType()] = $descriptor;
                 }
             } catch (Exception $ex) {
                 if ($foundTerminator) {
@@ -286,5 +296,7 @@ class IsoFile
                 continue;
             }
         }
+
+        return [$descriptors, $additional];
     }
 }

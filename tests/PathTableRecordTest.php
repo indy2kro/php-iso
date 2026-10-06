@@ -6,41 +6,39 @@ namespace PhpIso\Test;
 
 use PHPUnit\Framework\TestCase;
 use PhpIso\PathTableRecord;
-use PhpIso\Util\Buffer;
 use PhpIso\Exception;
+use PhpIso\Test\Support\Records;
 
 final class PathTableRecordTest extends TestCase
 {
-    public function testSetDirectoryNumber(): void
+    public function testDirectoryNumberIsTheOneGiven(): void
     {
-        $record = new PathTableRecord();
-        $record->setDirectoryNumber(5);
-        $this->assertSame(5, $record->dirNum);
+        $this->assertSame(5, Records::pathRecord('DIR', 1, 5)->dirNum);
     }
 
-    public function testInitWithZeroDirIdLen(): void
+    public function testReadWithZeroDirIdLen(): void
     {
         $bytes = [0];
-        $offset = 0;
-        $record = new PathTableRecord();
+        $offset = 1;
 
-        $result = $record->init($bytes, $offset);
-        $this->assertFalse($result);
+        $this->assertNotInstanceOf(PathTableRecord::class, PathTableRecord::read($bytes, $offset, 1));
+    }
+
+    public function testReadParsesTheFields(): void
+    {
+        $record = Records::pathRecord('SUB', 4, 2, 77);
+
+        $this->assertSame('SUB', $record->dirIdentifier);
+        $this->assertSame(4, $record->parentDirNum);
+        $this->assertSame(77, $record->location);
+        $this->assertSame(3, $record->dirIdLen);
     }
 
     public function testGetFullPath(): void
     {
-        $record1 = new PathTableRecord();
-        $record1->dirIdentifier = 'root';
-        $record1->parentDirNum = 1;
-
-        $record2 = new PathTableRecord();
-        $record2->dirIdentifier = 'subdir';
-        $record2->parentDirNum = 1;
-
-        $record3 = new PathTableRecord();
-        $record3->dirIdentifier = 'subsubdir';
-        $record3->parentDirNum = 2;
+        $record1 = Records::pathRecord('root', 1, 1);
+        $record2 = Records::pathRecord('subdir', 1, 2);
+        $record3 = Records::pathRecord('subsubdir', 2, 3);
 
         $pathTable = [
             1 => $record1,
@@ -58,14 +56,18 @@ final class PathTableRecordTest extends TestCase
         $this->expectException(Exception::class);
         $this->expectExceptionMessage('Maximum depth of 1000 reached');
 
-        $record = new PathTableRecord();
-        $record->dirIdentifier = 'loop';
-        $record->parentDirNum = 2;
+        // a directory that is its own parent
+        $record = Records::pathRecord('loop', 2, 2);
 
-        $pathTable = [
-            2 => $record,
-        ];
+        $record->getFullPath([2 => $record]);
+    }
 
-        $record->getFullPath($pathTable);
+    public function testGetFullPathWithMissingParent(): void
+    {
+        $this->expectException(Exception::class);
+
+        $record = Records::pathRecord('orphan', 9, 2);
+
+        $record->getFullPath([2 => $record]);
     }
 }

@@ -5,86 +5,119 @@ declare(strict_types=1);
 namespace PhpIso\Test;
 
 use PHPUnit\Framework\TestCase;
+use PhpIso\Exception;
 use PhpIso\FileDirectory;
 use PhpIso\IsoFile;
+use PhpIso\Test\Support\Records;
 
 final class FileDirectoryTest extends TestCase
 {
-    public function testInitWithInvalidBuffer(): void
+    public function testReadWithInvalidBuffer(): void
     {
         $buffer = [0]; // dirRecLength is 0
-        $offset = 0;
+        $offset = 1;
 
-        $fileDirectory = new FileDirectory();
-        $result = $fileDirectory->init($buffer, $offset);
+        $this->assertNotInstanceOf(FileDirectory::class, FileDirectory::read($buffer, $offset));
+    }
 
-        $this->assertFalse($result);
+    public function testReadWithoutData(): void
+    {
+        $buffer = [];
+        $offset = 1;
+
+        $this->assertNotInstanceOf(FileDirectory::class, FileDirectory::read($buffer, $offset));
+    }
+
+    public function testReadRecordShorterThanItsFixedPartIsRejected(): void
+    {
+        $buffer = [1 => 10, 2 => 0, 3 => 0];
+        $offset = 1;
+
+        $this->expectException(Exception::class);
+
+        FileDirectory::read($buffer, $offset);
+    }
+
+    public function testReadMovesTheOffsetAfterTheRecord(): void
+    {
+        $buffer = Records::bytes(\PhpIso\Test\Support\IsoBuilder::record('A.TXT', 7, 9, 0));
+        $length = count($buffer);
+        $offset = 1;
+
+        $record = FileDirectory::read($buffer, $offset);
+
+        $this->assertInstanceOf(FileDirectory::class, $record);
+        $this->assertSame($length + 1, $offset);
+        $this->assertSame(7, $record->location);
+        $this->assertSame(9, $record->dataLength);
+        $this->assertSame('A.TXT', $record->fileId);
+    }
+
+    public function testVersionSuffixIsStripped(): void
+    {
+        $this->assertSame('A.TXT', Records::directory('A.TXT;1')->fileId);
+    }
+
+    public function testJolietLevelIsKept(): void
+    {
+        $this->assertSame(3, Records::directory('A', 0, 0, 0, 3)->jolietLevel);
     }
 
     public function testIsHidden(): void
     {
-        $fileDirectory = new FileDirectory();
-        $fileDirectory->flags = FileDirectory::FILE_MODE_HIDDEN;
-
-        $this->assertTrue($fileDirectory->isHidden());
+        $this->assertTrue(Records::directory('A', FileDirectory::FILE_MODE_HIDDEN)->isHidden());
+        $this->assertFalse(Records::directory('A', 0)->isHidden());
     }
 
     public function testIsDirectory(): void
     {
-        $fileDirectory = new FileDirectory();
-        $fileDirectory->flags = FileDirectory::FILE_MODE_DIRECTORY;
-
-        $this->assertTrue($fileDirectory->isDirectory());
+        $this->assertTrue(Records::directory('A', FileDirectory::FILE_MODE_DIRECTORY)->isDirectory());
     }
 
     public function testIsAssociated(): void
     {
-        $fileDirectory = new FileDirectory();
-        $fileDirectory->flags = FileDirectory::FILE_MODE_ASSOCIATED;
-
-        $this->assertTrue($fileDirectory->isAssociated());
+        $this->assertTrue(Records::directory('A', FileDirectory::FILE_MODE_ASSOCIATED)->isAssociated());
     }
 
     public function testIsRecord(): void
     {
-        $fileDirectory = new FileDirectory();
-        $fileDirectory->flags = FileDirectory::FILE_MODE_RECORD;
-
-        $this->assertTrue($fileDirectory->isRecord());
+        $this->assertTrue(Records::directory('A', FileDirectory::FILE_MODE_RECORD)->isRecord());
     }
 
     public function testIsProtected(): void
     {
-        $fileDirectory = new FileDirectory();
-        $fileDirectory->flags = FileDirectory::FILE_MODE_PROTECTED;
-
-        $this->assertTrue($fileDirectory->isProtected());
+        $this->assertTrue(Records::directory('A', FileDirectory::FILE_MODE_PROTECTED)->isProtected());
     }
 
     public function testIsMultiExtent(): void
     {
-        $fileDirectory = new FileDirectory();
-        $fileDirectory->flags = FileDirectory::FILE_MODE_MULTI_EXTENT;
-
-        $this->assertTrue($fileDirectory->isMultiExtent());
+        $this->assertTrue(Records::directory('A', FileDirectory::FILE_MODE_MULTI_EXTENT)->isMultiExtent());
     }
 
     public function testIsThis(): void
     {
-        $fileDirectory = new FileDirectory();
-        $fileDirectory->fileId = '.';
-        $fileDirectory->fileIdLength = 1;
+        $record = Records::directory("\0");
 
-        $this->assertTrue($fileDirectory->isThis());
+        $this->assertSame('.', $record->fileId);
+        $this->assertTrue($record->isThis());
+        $this->assertFalse($record->isParent());
     }
 
     public function testIsParent(): void
     {
-        $fileDirectory = new FileDirectory();
-        $fileDirectory->fileId = '..';
-        $fileDirectory->fileIdLength = 1;
+        $record = Records::directory("\1");
 
-        $this->assertTrue($fileDirectory->isParent());
+        $this->assertSame('..', $record->fileId);
+        $this->assertTrue($record->isParent());
+        $this->assertFalse($record->isThis());
+    }
+
+    public function testNamedRecordIsNeitherThisNorParent(): void
+    {
+        $record = Records::directory('NAME');
+
+        $this->assertFalse($record->isThis());
+        $this->assertFalse($record->isParent());
     }
 
     public function testLoadExtentsSt(): void

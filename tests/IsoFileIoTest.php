@@ -11,6 +11,7 @@ use PhpIso\IsoFile;
 use PhpIso\PathTableRecord;
 use PhpIso\Test\Support\IsoBuilder;
 use PhpIso\Test\Support\IsoTree;
+use PhpIso\Test\Support\Records;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -104,7 +105,7 @@ final class IsoFileIoTest extends TestCase
         $this->assertInstanceOf(\PhpIso\IsoEntry::class, $entry);
         $target = $this->temp();
 
-        (new PathTableRecord())->extractFile($isoFile, 2048, $entry->location, 5, $target);
+        Records::pathRecord('X', 1)->extractFile($isoFile, 2048, $entry->location, 5, $target);
 
         $this->assertSame('hello', file_get_contents($target));
     }
@@ -218,7 +219,7 @@ final class IsoFileIoTest extends TestCase
         $buffer = [];
         $offset = 1;
 
-        $this->assertFalse((new FileDirectory())->init($buffer, $offset));
+        $this->assertNotInstanceOf(FileDirectory::class, FileDirectory::read($buffer, $offset));
     }
 
     public function testPathTableRecordInitWithoutDataReturnsFalse(): void
@@ -226,7 +227,7 @@ final class IsoFileIoTest extends TestCase
         $buffer = [];
         $offset = 1;
 
-        $this->assertFalse((new PathTableRecord())->init($buffer, $offset));
+        $this->assertNotInstanceOf(PathTableRecord::class, PathTableRecord::read($buffer, $offset, 1));
     }
 
     public function testTruncatedPathTableRecordReturnsFalse(): void
@@ -234,7 +235,7 @@ final class IsoFileIoTest extends TestCase
         $buffer = [10, 0, 0, 0]; // claims a 10 bytes identifier but the buffer ends
         $offset = 1;
 
-        $this->assertFalse((new PathTableRecord())->init($buffer, $offset));
+        $this->assertNotInstanceOf(PathTableRecord::class, PathTableRecord::read($buffer, $offset, 1));
     }
 
     public function testDirectoryLoadingFailsWhenTheImageCannotBeRead(): void

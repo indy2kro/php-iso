@@ -6,20 +6,18 @@ namespace PhpIso;
 
 abstract class Descriptor
 {
-    public string $name;
-    protected int $type;
+    protected const string NAME = '';
+    protected const int TYPE = -1;
 
-    /**
-     * @param array<int, int>|null $bytes
-     */
-    public function __construct(public string $stdId = '', public int $version = 0, protected ?array $bytes = null)
+    public readonly string $name;
+
+    public function __construct(public readonly string $stdId = '', public readonly int $version = 0)
     {
+        $this->name = static::NAME;
     }
 
     public function getType(): int
     {
-        return $this->type;
+        return static::TYPE;
     }
-
-    abstract public function init(IsoFile $isoFile, int &$offset): void;
 }

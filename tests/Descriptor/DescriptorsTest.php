@@ -75,27 +75,42 @@ final class DescriptorsTest extends TestCase
         $this->assertSame(200, $partition->volPartitionSize);
     }
 
-    public function testDescriptorWithoutBytesIsNotInitialised(): void
+    public function testTruncatedVolumeDescriptorIsRejected(): void
     {
-        $isoFile = $this->open((new IsoBuilder())->addVolumeDescriptor(0)->addTerminator(1));
-        $volume = new PrimaryVolume();
+        $bytes = [1, 2, 3];
         $offset = 1;
 
-        $volume->init($isoFile, $offset);
+        $this->expectException(Exception::class);
 
-        $this->assertSame(1, $offset);
+        new PrimaryVolume('CD001', 1, $bytes, $offset);
     }
 
-    public function testBootRecordWithoutBytesIsNotInitialised(): void
+    public function testTruncatedBootRecordIsRejected(): void
     {
-        $isoFile = $this->open((new IsoBuilder())->addVolumeDescriptor(0)->addTerminator(1));
+        $bytes = [1, 2, 3];
         $offset = 1;
 
-        (new Boot())->init($isoFile, $offset);
+        $this->expectException(Exception::class);
 
-        $this->assertSame(1, $offset);
+        new Boot('CD001', 1, $bytes, $offset);
     }
 
+    public function testVolumeWithoutRootDirectoryRecordIsRejected(): void
+    {
+        // a primary volume descriptor whose root directory record is empty
+        $sector = (new IsoBuilder())->addVolumeDescriptor(0)->addTerminator(1)->build();
+        /** @var array<int, int>|false $bytes */
+        $bytes = unpack('C*', substr($sector, 16 * 2048, 2048));
+        $this->assertIsArray($bytes);
+        for ($i = 157; $i <= 190; $i++) {
+            $bytes[$i] = 0;
+        }
+        $offset = 8;
+
+        $this->expectException(Exception::class);
+
+        new PrimaryVolume('CD001', 1, $bytes, $offset);
+    }
     public function testNonElToritoBootRecordHasNoCatalog(): void
     {
         $isoFile = $this->bootImage(IsoBuilder::bootCatalog(), 'SOMETHING ELSE');
