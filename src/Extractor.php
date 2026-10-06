@@ -35,6 +35,11 @@ class Extractor
                 continue;
             }
 
+            // symbolic links are never materialised: they could point outside of the destination
+            if ($entry->isSymlink()) {
+                continue;
+            }
+
             $this->ensureDirectory(dirname($target));
 
             if ($onFile !== null) {

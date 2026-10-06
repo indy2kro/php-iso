@@ -11,6 +11,7 @@ use PhpIso\FileDirectory;
 use PhpIso\IsoEntry;
 use PhpIso\IsoFile;
 use PhpIso\PathTableRecord;
+use PhpIso\RockRidgeInfo;
 use PhpIso\Util\Buffer;
 use PhpIso\Util\IsoDate;
 
@@ -125,9 +126,12 @@ abstract class Volume extends Descriptor
      *
      * Entries are untrusted: names are not sanitized here, see Util\SafePath before using them on disk.
      *
+     * On a primary volume the Rock Ridge extensions (long POSIX names, mode, owner, symbolic links, relocated
+     * directories) are applied unless $rockRidge is false.
+     *
      * @return \Generator<int, IsoEntry>
      */
-    public function walk(IsoFile $isoFile, int $maxDepth = 64): \Generator
+    public function walk(IsoFile $isoFile, int $maxDepth = 64, bool $rockRidge = true): \Generator
     {
         if ($this->blockSize <= 0) {
             return;
@@ -137,7 +141,7 @@ abstract class Volume extends Descriptor
         $visited = [$this->rootDirectory->location => true];
 
         // explicit stack instead of recursion: a hostile image cannot exhaust the PHP stack
-        /** @var list<array{string, int, int, int}> $stack path, location, length, depth */
+        /** @var list<array{string, int, int|null, int}> $stack path, location, length (null: read it from the directory), depth */
         $stack = [['', $this->rootDirectory->location, $this->rootDirectory->dataLength, 0]];
 
         while ($stack !== []) {
@@ -155,7 +159,16 @@ abstract class Volume extends Descriptor
                     continue;
                 }
 
-                $path = $base . '/' . $record->fileId;
+                $rr = ($supplementary || ! $rockRidge) ? null : RockRidge::parse($record->systemUse, $isoFile, $this->blockSize);
+
+                // the real directory is listed through its "child link" placeholder
+                if ($rr instanceof RockRidgeInfo && $rr->relocated) {
+                    continue;
+                }
+
+                $rrName = $rr instanceof RockRidgeInfo ? $rr->name : null;
+                $name = ($rrName !== null && $rrName !== '') ? $rrName : $record->fileId;
+                $path = $base . '/' . $name;
 
                 // a multi-extent file is stored as several records (all but the last flagged), report it once
                 if (! $record->isDirectory() && ($record->isMultiExtent() || $pending !== null)) {
@@ -174,11 +187,15 @@ abstract class Volume extends Descriptor
                     continue;
                 }
 
-                yield new IsoEntry($path, $record->fileId, $record->isDirectory(), $record->dataLength, $record->location, $record->recordingDate, $record->isHidden());
+                $link = $rr?->childLocation;
+                $isDirectory = $record->isDirectory() || $link !== null;
+                $location = $link ?? $record->location;
 
-                if ($record->isDirectory() && $depth < $maxDepth && ! isset($visited[$record->location])) {
-                    $visited[$record->location] = true;
-                    $subDirectories[] = [$path, $record->location, $record->dataLength, $depth + 1];
+                yield new IsoEntry($path, $name, $isDirectory, $link === null ? $record->dataLength : 0, $location, $record->recordingDate, $record->isHidden(), [], $rr);
+
+                if ($isDirectory && $depth < $maxDepth && ! isset($visited[$location])) {
+                    $visited[$location] = true;
+                    $subDirectories[] = [$path, $location, $link === null ? $record->dataLength : null, $depth + 1];
                 }
             }
 

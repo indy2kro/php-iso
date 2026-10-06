@@ -136,7 +136,7 @@ class IsoTool
             if ($entry->isDirectory) {
                 echo $entry->path . '/' . PHP_EOL;
             } else {
-                echo $entry->path . "\t" . $entry->size . PHP_EOL;
+                echo $entry->path . "	" . $entry->size . ($entry->isSymlink() ? "	-> " . $entry->rockRidge?->symlink : "") . PHP_EOL;
             }
         }
     }

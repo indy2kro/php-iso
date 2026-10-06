@@ -115,6 +115,11 @@ class FileDirectory
     public int $jolietLevel = 0;
 
     /**
+     * Raw system use area of the record (Rock Ridge / SUSP entries)
+     */
+    public string $systemUse = '';
+
+    /**
      * Load the "Directory Record" from buffer
      *
      * @param array<int, int> $buffer
@@ -173,6 +178,14 @@ class FileDirectory
             }
 
             $this->fileId = trim($this->fileId);
+        }
+
+        // the system use area (SUSP / Rock Ridge) follows the identifier and its padding byte
+        $areaStart = $tmp + ($this->fileIdLength % 2 === 0 ? 1 : 0);
+        $areaEnd = $offset + $this->dirRecLength;
+        $this->systemUse = '';
+        for ($i = $areaStart; $i < $areaEnd; $i++) {
+            $this->systemUse .= chr($buffer[$i]);
         }
 
         $offset += $this->dirRecLength;
