@@ -17,9 +17,6 @@
         <include>
             <directory>./src/</directory>
         </include>
-        <exclude>
-            <directory>./src/Cli/</directory>
-        </exclude>
     </source>
     <testsuites>
         <testsuite name="PhpIso Testing Suite">
