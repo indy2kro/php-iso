@@ -11,8 +11,10 @@ use PhpIso\Descriptor\SupplementaryVolume;
 use PhpIso\Descriptor\Volume;
 use PhpIso\Exception;
 use PhpIso\Extractor;
+use PhpIso\FileSystem;
 use PhpIso\IsoEntry;
 use PhpIso\IsoFile;
+use PhpIso\Udf\UdfFileSystem;
 use Throwable;
 
 class IsoTool
@@ -125,6 +127,14 @@ class IsoTool
 
             echo PHP_EOL;
         }
+
+        $udf = $this->udf($isoFile);
+        if ($udf instanceof UdfFileSystem) {
+            echo '  - UDF file system' . PHP_EOL;
+            echo '   - Volume ID: ' . $udf->volumeId . PHP_EOL;
+            $this->displayFiles($udf, $isoFile);
+            echo PHP_EOL;
+        }
     }
 
     protected function listAction(string $file): void
@@ -195,7 +205,17 @@ class IsoTool
             $descriptors[] = $item;
         }
 
-        echo json_encode(['file' => $file, 'descriptors' => $descriptors], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) . PHP_EOL;
+        $result = ['file' => $file, 'descriptors' => $descriptors];
+
+        $udf = $this->udf($isoFile);
+        if ($udf instanceof UdfFileSystem) {
+            $result['udf'] = [
+                'volumeId' => $udf->volumeId,
+                'files' => array_map(static fn (IsoEntry $entry): array => $entry->toArray(), iterator_to_array($udf->walk($isoFile), false)),
+            ];
+        }
+
+        echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) . PHP_EOL;
     }
 
     protected function extractAction(string $file, string $extractPath): void
@@ -213,9 +233,23 @@ class IsoTool
         echo 'Extract finished! (' . $count . ' files)' . PHP_EOL;
     }
 
-    protected function requireVolume(IsoFile $isoFile): Volume
+    protected function requireVolume(IsoFile $isoFile): FileSystem
     {
-        return $isoFile->getPreferredVolume() ?? throw new Exception('No supported volume descriptor found in the ISO file.');
+        return $isoFile->getFileSystem() ?? throw new Exception('No supported file system found in the ISO file.');
+    }
+
+    /**
+     * The UDF file system, an unsupported one is reported without hiding the rest of the information
+     */
+    protected function udf(IsoFile $isoFile): ?UdfFileSystem
+    {
+        try {
+            return $isoFile->getUdfFileSystem();
+        } catch (Exception $ex) {
+            $this->displayError('UDF: ' . $ex->getMessage());
+
+            return null;
+        }
     }
 
     protected function infoVolume(Volume $volumeDescriptor): void
@@ -265,7 +299,7 @@ class IsoTool
         ];
     }
 
-    protected function displayFiles(Volume $volumeDescriptor, IsoFile $isoFile): void
+    protected function displayFiles(FileSystem $volumeDescriptor, IsoFile $isoFile): void
     {
         echo '   - Files:' . PHP_EOL;
 
@@ -391,13 +425,8 @@ class IsoTool
 
     protected function firstString(mixed $value): string
     {
-        if (is_array($value)) {
-            $value = current($value);
-        }
-
         return is_string($value) ? $value : '';
     }
-
     protected function displayError(string $error): void
     {
         fwrite(STDERR, 'ERROR: ' . $error . PHP_EOL);

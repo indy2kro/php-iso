@@ -69,11 +69,18 @@ class IsoDate
      */
     protected static function create(int $year, int $month, int $day, int $hour, int $min, int $sec, int $offsetByte): ?Carbon
     {
+        return self::createWithOffsetMinutes($year, $month, $day, $hour, $min, $sec, ($offsetByte > 127 ? $offsetByte - 256 : $offsetByte) * 15);
+    }
+
+    /**
+     * Build a date from its components and an offset from UTC in minutes, null when a component is invalid
+     */
+    public static function createWithOffsetMinutes(int $year, int $month, int $day, int $hour, int $min, int $sec, int $minutes): ?Carbon
+    {
         if ($month < 1 || $month > 12 || $day < 1 || $day > 31 || $hour > 23 || $min > 59 || $sec > 59) {
             return null;
         }
 
-        $minutes = ($offsetByte > 127 ? $offsetByte - 256 : $offsetByte) * 15;
         $sign = $minutes < 0 ? '-' : '+';
         $timezone = sprintf('%s%02d:%02d', $sign, intdiv(abs($minutes), 60), abs($minutes) % 60);
 

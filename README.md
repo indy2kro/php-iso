@@ -28,12 +28,13 @@ Features
 - Directory tree walking with `Volume::walk()` (no need to process the path table manually)
 - Safe extraction with `Extractor` (names coming from the ISO are validated, nothing can be written outside of the destination)
 - Both-endian (M and L) path tables, directories spanning multiple sectors
+- UDF file system reading (`IsoFile::getUdfFileSystem()`), UDF only images are browsable through `IsoFile::getFileSystem()` like ISO 9660 ones (same `FileSystem` interface: `walk`, `find`, `search`, `readFile`, `openStream`)
 - Rock Ridge: POSIX long names, mode, owner, symbolic links, continuation areas and relocated directories (`Volume::walk()`, `IsoEntry::$rockRidge`); symbolic links are never created on extraction
 - Reading file content: `Volume::find()`, `search()`, `readFile()`, `openStream()` (multi-extent files are reported once)
 
 Known limitations
 ------------
-- UDF descriptors are detected, but the UDF file system itself is not read
+- UDF: plain partitions with 2048 bytes blocks are read; sparable, virtual and metadata partitions (e.g. some Blu-ray images) are reported as unsupported
 
 Installation
 ------------
