@@ -83,7 +83,7 @@ class IsoFile
     protected function processFile(): void
     {
         if ($this->seek(16 * 2048, SEEK_SET) === -1) {
-            return false;
+            return;
         }
 
         $reader = new Reader($this);
