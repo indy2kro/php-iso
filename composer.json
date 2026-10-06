@@ -31,6 +31,31 @@
             "PhpIso\\Test\\" : "tests/"
         }
     },
+    "scripts": {
+        "tests": "phpunit --no-coverage",
+        "tests:coverage": "phpunit --coverage-text",
+        "cs:check": "phpcs",
+        "cs:fix": "phpcbf",
+        "phpstan": "phpstan analyze",
+        "rector:check": "rector process --dry-run",
+        "rector:fix": "rector process",
+        "check": [
+            "@cs:check",
+            "@phpstan",
+            "@rector:check",
+            "@tests"
+        ]
+    },
+    "scripts-descriptions": {
+        "tests": "Run the test suite",
+        "tests:coverage": "Run the test suite with a coverage summary (needs pcov or xdebug)",
+        "cs:check": "Check the code style (PSR-12)",
+        "cs:fix": "Fix the code style automatically",
+        "phpstan": "Run the static analysis",
+        "rector:check": "Show the refactorings Rector would apply",
+        "rector:fix": "Apply the Rector refactorings",
+        "check": "Run every quality gate used by CI"
+    },
     "config": {
         "allow-plugins": {
             "dealerdirect/phpcodesniffer-composer-installer": true

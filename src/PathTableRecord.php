@@ -51,9 +51,13 @@ class PathTableRecord
      *
      * @param array<int, int> $bytes
      */
-    public function init(array &$bytes, int &$offset, bool $supplementary = false): bool
+    public function init(array &$bytes, int &$offset, bool $supplementary = false, bool $littleEndian = false): bool
     {
         $offsetTmp = $offset;
+
+        if (! isset($bytes[$offsetTmp])) {
+            return false;
+        }
 
         $this->dirIdLen = $bytes[$offsetTmp];
         $offsetTmp++;
@@ -62,11 +66,21 @@ class PathTableRecord
             return false;
         }
 
+        // the fixed part is 8 bytes, followed by the identifier
+        if (! isset($bytes[$offsetTmp + 6 + $this->dirIdLen])) {
+            return false;
+        }
+
         $this->extendedAttrLength = $bytes[$offsetTmp];
         $offsetTmp++;
-        $this->location = Buffer::readInt32($bytes, $offsetTmp);
-        $this->parentDirNum = Buffer::readInt16($bytes, $offsetTmp);
-        $this->dirIdentifier = Buffer::readAString($bytes, $this->dirIdLen, $offsetTmp);
+        if ($littleEndian) {
+            $this->location = Buffer::readLSB($bytes, 4, $offsetTmp);
+            $this->parentDirNum = Buffer::readLSB($bytes, 2, $offsetTmp);
+        } else {
+            $this->location = Buffer::readInt32($bytes, $offsetTmp);
+            $this->parentDirNum = Buffer::readInt16($bytes, $offsetTmp);
+        }
+        $this->dirIdentifier = Buffer::readAString($bytes, $this->dirIdLen, $offsetTmp, $supplementary);
 
         if ($this->dirIdLen % 2 !== 0) {
             $offsetTmp++;
@@ -86,43 +100,14 @@ class PathTableRecord
         return FileDirectory::loadExtentsSt($isoFile, $blockSize, $this->location, $supplementary, $jolietLevel);
     }
 
+    /**
+     * Extract a file to disk
+     *
+     * @throws Exception
+     */
     public function extractFile(IsoFile &$isoFile, int $blockSize, int $location, int $dataLength, string $destinationFile): void
     {
-        $seekLocation = $location * $blockSize;
-
-        if ($isoFile->seek($seekLocation, SEEK_SET) === -1) {
-            throw new Exception('Failed to seek to location');
-        }
-
-        $writeHandle = fopen($destinationFile, 'wb');
-
-        if ($writeHandle === false) {
-            throw new Exception('Failed to open file for writing: ' . $destinationFile);
-        }
-
-        do {
-            $readLength = 1024;
-
-            if ($dataLength < $readLength) {
-                $readLength = $dataLength;
-            }
-
-            $readResult = $isoFile->read($readLength);
-
-            if ($readResult === false) {
-                break;
-            }
-
-            $writeResult = fwrite($writeHandle, $readResult);
-
-            if ($writeResult === false) {
-                throw new Exception('Failed to write to file: ' . $destinationFile);
-            }
-
-            $dataLength -= $readLength;
-        } while ($dataLength > 0);
-
-        fclose($writeHandle);
+        $isoFile->extractRange($location * $blockSize, $dataLength, $destinationFile);
     }
 
     /**
@@ -143,7 +128,7 @@ class PathTableRecord
         }
 
         $path = $this->dirIdentifier;
-        $used = $pathTable[$this->parentDirNum];
+        $used = $pathTable[$this->parentDirNum] ?? throw new Exception('Missing parent directory in path table: ' . $this->parentDirNum);
 
         $depth = 0;
         while (true) {
@@ -160,7 +145,7 @@ class PathTableRecord
                 break;
             }
 
-            $used = $pathTable[$used->parentDirNum];
+            $used = $pathTable[$used->parentDirNum] ?? throw new Exception('Missing parent directory in path table: ' . $used->parentDirNum);
         }
 
         return DIRECTORY_SEPARATOR . $path . DIRECTORY_SEPARATOR;

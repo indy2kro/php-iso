@@ -38,7 +38,7 @@ jobs:
         - name: Get Composer Cache Directory 2
           id: composer-cache
           run: |
-            echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+            echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
 
         - uses: actions/cache@v6
           id: actions-cache
@@ -65,6 +65,9 @@ jobs:
 
         - name: Validate composer.json
           run: composer validate --strict
+
+        - name: Audit dependencies
+          run: composer audit
 
         - name: Code style test
           run: vendor/bin/phpcs

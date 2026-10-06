@@ -279,13 +279,13 @@ final class IsoFileTest extends TestCase
         $this->assertSame('Primary volume descriptor', $primaryVolumeDescriptor->name);
         $this->assertSame('CD001', $primaryVolumeDescriptor->stdId);
         $this->assertSame(1, $primaryVolumeDescriptor->version);
-        $this->assertSame(0, $primaryVolumeDescriptor->fileStructureVersion);
+        $this->assertSame(1, $primaryVolumeDescriptor->fileStructureVersion);
         $this->assertSame('', $primaryVolumeDescriptor->systemId);
         $this->assertSame('DOS4.01', $primaryVolumeDescriptor->volumeId);
         $this->assertSame(848, $primaryVolumeDescriptor->volumeSpaceSize);
         $this->assertSame('', $primaryVolumeDescriptor->appId);
-        $this->assertNotInstanceOf(Carbon::class, $primaryVolumeDescriptor->creationDate);
-        $this->assertNotInstanceOf(Carbon::class, $primaryVolumeDescriptor->modificationDate);
+        $this->assertSame('2005-01-26 08:25:06', $primaryVolumeDescriptor->creationDate?->toDateTimeString());
+        $this->assertSame('2005-01-26 08:25:06', $primaryVolumeDescriptor->modificationDate?->toDateTimeString());
         $this->assertNotInstanceOf(Carbon::class, $primaryVolumeDescriptor->expirationDate);
         $this->assertNotInstanceOf(Carbon::class, $primaryVolumeDescriptor->effectiveDate);
 
@@ -306,14 +306,14 @@ final class IsoFileTest extends TestCase
         $this->assertSame('Supplementary volume descriptor', $supplementaryVolumeDescriptor->name);
         $this->assertSame('CD001', $supplementaryVolumeDescriptor->stdId);
         $this->assertSame(1, $supplementaryVolumeDescriptor->version);
-        $this->assertSame(0, $supplementaryVolumeDescriptor->fileStructureVersion);
+        $this->assertSame(1, $supplementaryVolumeDescriptor->fileStructureVersion);
         $this->assertSame('', $supplementaryVolumeDescriptor->systemId);
         $this->assertSame('DOS4.01', $supplementaryVolumeDescriptor->volumeId);
         $this->assertSame(848, $supplementaryVolumeDescriptor->volumeSpaceSize);
         $this->assertSame('', $supplementaryVolumeDescriptor->appId);
         $this->assertSame(3, $supplementaryVolumeDescriptor->jolietLevel);
-        $this->assertNotInstanceOf(Carbon::class, $supplementaryVolumeDescriptor->creationDate);
-        $this->assertNotInstanceOf(Carbon::class, $supplementaryVolumeDescriptor->modificationDate);
+        $this->assertSame('2005-01-26 08:25:06', $supplementaryVolumeDescriptor->creationDate?->toDateTimeString());
+        $this->assertSame('2005-01-26 08:25:06', $supplementaryVolumeDescriptor->modificationDate?->toDateTimeString());
         $this->assertNotInstanceOf(Carbon::class, $supplementaryVolumeDescriptor->expirationDate);
         $this->assertNotInstanceOf(Carbon::class, $supplementaryVolumeDescriptor->effectiveDate);
     }

@@ -20,15 +20,21 @@ Basic concepts
   - `PathTableRecord` - object which contains the record information for a file/directory
 - Each class contains various properties which can be used to interact with them, most of them `public`
 
+Features
+------------
+- Reads the ISO 9660 volume descriptors (primary, supplementary, boot, partition, terminator)
+- Joliet (Unicode long file names) detection and support
+- El Torito boot catalog parsing (`Boot::loadCatalog()`)
+- Directory tree walking with `Volume::walk()` (no need to process the path table manually)
+- Safe extraction with `Extractor` (names coming from the ISO are validated, nothing can be written outside of the destination)
+- Both-endian (M and L) path tables, directories spanning multiple sectors
+
 Known limitations
 ------------
 - ISO extensions currently not supported:
-  - El Torito
-  - Joliet
   - Rock Ridge
-- UDF file format not supported
-- Reading metadata requires manually processing the descriptors
-  - Some Iterator implementation would be nice to have
+- UDF descriptors are detected, but the UDF file system itself is not read
+- Multi-extent files are listed as several entries
 
 Installation
 ------------
@@ -48,8 +54,17 @@ Usage:
   isotool [options] --file=<path>
 
 Options:
-  -f, --file                     Path for the ISO file (mandatory)
+  -f, --file=<path>              Path for the ISO file (mandatory)
+  -l, --list                     Print only the list of files (path and size)
+  -j, --json                     Print all the information as JSON
   -x, --extract=<extract_path>   Extract files in the given location
+  -h, --help                     Show this help
+
+Exit codes:
+  0  success
+  1  usage error
+  2  invalid file argument
+  3  the ISO could not be read or extracted
 ```
 
 Sample usage:
@@ -109,6 +124,33 @@ Number of descriptors: 3
 
 Usage
 -----
+Walking the files of an ISO (Joliet names are used when present):
+```php
+<?php
+
+use PhpIso\IsoFile;
+
+$isoFile = new IsoFile('test.iso');
+$volume = $isoFile->getPreferredVolume();
+
+foreach ($volume->walk($isoFile) as $entry) {
+    echo $entry->path, $entry->isDirectory ? '/' : ' (' . $entry->size . ' bytes)', PHP_EOL;
+}
+```
+
+Extracting everything (names are untrusted input, the extractor refuses names that could escape the destination):
+```php
+(new \PhpIso\Extractor())->extract($isoFile, $volume, '/tmp/out');
+```
+
+Reading the El Torito boot catalog:
+```php
+$catalog = $isoFile->getBootRecord()?->loadCatalog($isoFile);
+$entry = $catalog?->getDefaultEntry();
+echo $entry?->getMediaName(), PHP_EOL;
+```
+
+Low level access to the descriptors and the path table:
 ```php
 <?php
 

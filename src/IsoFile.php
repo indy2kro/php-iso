@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace PhpIso;
 
+use PhpIso\Descriptor\Boot;
+use PhpIso\Descriptor\PrimaryVolume;
 use PhpIso\Descriptor\Reader;
+use PhpIso\Descriptor\SupplementaryVolume;
 use PhpIso\Descriptor\Type;
 use PhpIso\Descriptor\UdfDescriptor;
 use PhpIso\Descriptor\UdfTeaDescriptor;
+use PhpIso\Descriptor\Volume;
 
 class IsoFile
 {
@@ -31,6 +35,95 @@ class IsoFile
     public function __destruct()
     {
         $this->closeFile();
+    }
+
+    /**
+     * Size of the ISO file in bytes (0 when unknown)
+     */
+    public function getSize(): int
+    {
+        $size = filesize($this->isoFilePath);
+
+        return $size === false ? 0 : $size;
+    }
+
+    /**
+     * Copy a byte range of the ISO to a file on disk
+     *
+     * @throws Exception
+     */
+    public function extractRange(int $offset, int $length, string $destinationFile): void
+    {
+        if ($offset < 0 || $length < 0 || $offset + $length > $this->getSize()) {
+            throw new Exception('Requested range is outside of the ISO file');
+        }
+
+        if ($this->seek($offset, SEEK_SET) === -1) {
+            throw new Exception('Failed to seek to location');
+        }
+
+        $writeHandle = fopen($destinationFile, 'wb');
+
+        if ($writeHandle === false) {
+            throw new Exception('Failed to open file for writing: ' . $destinationFile);
+        }
+
+        try {
+            $remaining = $length;
+            while ($remaining > 0) {
+                $chunk = $this->read(min(8192, $remaining));
+
+                if ($chunk === false || $chunk === '') {
+                    throw new Exception('Unexpected end of ISO data while extracting');
+                }
+
+                if (fwrite($writeHandle, $chunk) === false) {
+                    throw new Exception('Failed to write to file: ' . $destinationFile);
+                }
+
+                $remaining -= strlen($chunk);
+            }
+        } finally {
+            fclose($writeHandle);
+        }
+    }
+
+    /**
+     * The primary volume descriptor, if present
+     */
+    public function getPrimaryVolume(): ?PrimaryVolume
+    {
+        $descriptor = $this->descriptors[Type::PRIMARY_VOLUME_DESC] ?? null;
+
+        return $descriptor instanceof PrimaryVolume ? $descriptor : null;
+    }
+
+    /**
+     * The supplementary (Joliet) volume descriptor, if present
+     */
+    public function getSupplementaryVolume(): ?SupplementaryVolume
+    {
+        $descriptor = $this->descriptors[Type::SUPPLEMENTARY_VOLUME_DESC] ?? null;
+
+        return $descriptor instanceof SupplementaryVolume ? $descriptor : null;
+    }
+
+    /**
+     * The boot record descriptor, if present
+     */
+    public function getBootRecord(): ?Boot
+    {
+        $descriptor = $this->descriptors[Type::BOOT_RECORD_DESC] ?? null;
+
+        return $descriptor instanceof Boot ? $descriptor : null;
+    }
+
+    /**
+     * The volume that should be used to browse files: Joliet (long, Unicode names) when available, otherwise primary
+     */
+    public function getPreferredVolume(): ?Volume
+    {
+        return $this->getSupplementaryVolume() ?? $this->getPrimaryVolume();
     }
 
     public function seek(int $offset, int $whence = SEEK_SET): int
