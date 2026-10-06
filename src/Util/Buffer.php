@@ -53,7 +53,7 @@ class Buffer
      */
     public static function readAString(array &$buffer, int $length, int &$offset = 0, bool $supplementary = false): string
     {
-        return self::getString($buffer, $length, $offset);
+        return self::getString($buffer, $length, $offset, $supplementary);
     }
 
     /**
@@ -64,6 +64,27 @@ class Buffer
     public static function readDString(array &$buffer, int $length, int &$offset = 0, bool $supplementary = false): string
     {
         return self::getString($buffer, $length, $offset, $supplementary);
+    }
+
+    /**
+     * Read raw byte values from the buffer
+     *
+     * @param array<int, int> $buffer
+     *
+     * @return array<int, int>
+     */
+    public static function getRawBytes(array &$buffer, int $length, int &$offset = 0): array
+    {
+        $bytes = [];
+        for ($i = $offset; $i < $offset + $length; $i++) {
+            if (! isset($buffer[$i])) {
+                throw new Exception('Failed to read buffer entry ' . $i);
+            }
+            $bytes[] = $buffer[$i];
+        }
+
+        $offset += $length;
+        return $bytes;
     }
 
     /**
@@ -90,7 +111,7 @@ class Buffer
      *
      * @param array<int, int> $buffer
      *
-     * @return int The BBO number OR -1 on error
+     * @return int The BBO number (little endian half when both halves disagree)
      */
     public static function readBBO(array &$buffer, int $length, int &$offset = 0): int
     {
@@ -114,11 +135,10 @@ class Buffer
             }
         }
 
-        if ($n1 !== $n2) {
-            return -1;
-        }
-
         $offset += $length;
+
+        // the two halves should match; when they do not (broken writers), trust the little endian half
+        // but always consume the field so the following fields stay aligned
         return $n1;
     }
 

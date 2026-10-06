@@ -6,63 +6,78 @@ namespace PhpIso\Cli;
 
 use PhpIso\Descriptor;
 use PhpIso\Descriptor\Boot;
-use PhpIso\Descriptor\PrimaryVolume;
+use PhpIso\Descriptor\BootCatalog;
 use PhpIso\Descriptor\SupplementaryVolume;
-use PhpIso\Descriptor\Type;
 use PhpIso\Descriptor\Volume;
 use PhpIso\Exception;
-use PhpIso\FileDirectory;
+use PhpIso\Extractor;
+use PhpIso\IsoEntry;
 use PhpIso\IsoFile;
-use PhpIso\PathTableRecord;
 use Throwable;
 
 class IsoTool
 {
-    public function run(): void
+    public const EXIT_OK = 0;
+    public const EXIT_USAGE = 1;
+    public const EXIT_INVALID_FILE = 2;
+    public const EXIT_ERROR = 3;
+
+    /**
+     * @param array<int, string>|null $argv defaults to the process arguments
+     *
+     * @return int the exit code
+     */
+    public function run(?array $argv = null): int
     {
-        $options = $this->parseCliArgs();
+        $options = $this->parseCliArgs($argv);
+
+        if (isset($options['h']) || isset($options['help'])) {
+            $this->displayHelp();
+            return self::EXIT_OK;
+        }
 
         if ($options === []) {
             $this->displayHelp();
-            exit(1);
+            return self::EXIT_USAGE;
         }
 
-        $fileValue = $options['file'] ?? $options['f'];
+        $file = $this->firstString($options['file'] ?? $options['f'] ?? null);
 
-        $file = '';
-
-        if (is_array($fileValue)) {
-            $file = current($fileValue);
-        } elseif (is_string($fileValue)) {
-            $file = $fileValue;
-        }
-
-        if (! is_string($file) || $file === '') {
+        if ($file === '') {
             $this->displayError('Invalid value for file received');
-            exit(2);
+            return self::EXIT_INVALID_FILE;
         }
 
-        $extractPath = '';
-        if (isset($options['extract']) && is_string($options['extract'])) {
-            $extractPath = $options['extract'];
-        } elseif (isset($options['x']) && is_string($options['x'])) {
-            $extractPath = $options['x'];
-        }
+        $extractPath = $this->firstString($options['extract'] ?? $options['x'] ?? null);
+        $json = isset($options['json']) || isset($options['j']);
+        $list = isset($options['list']) || isset($options['l']);
 
-        echo 'Input ISO file: ' . $file . PHP_EOL;
+        if (isset($options['extract']) || isset($options['x'])) {
+            if ($extractPath === '') {
+                $this->displayError('The extract option requires a destination directory');
+                return self::EXIT_USAGE;
+            }
+        }
 
         try {
             $this->checkIsoFile($file);
 
             if ($extractPath !== '') {
                 $this->extractAction($file, $extractPath);
+            } elseif ($json) {
+                $this->jsonAction($file);
+            } elseif ($list) {
+                $this->listAction($file);
             } else {
+                echo 'Input ISO file: ' . $file . PHP_EOL;
                 $this->infoAction($file);
             }
         } catch (Throwable $ex) {
             $this->displayError($ex->getMessage());
-            exit(3);
+            return self::EXIT_ERROR;
         }
+
+        return self::EXIT_OK;
     }
 
     protected function checkIsoFile(string $file): void
@@ -92,86 +107,73 @@ class IsoTool
                 $this->infoVolume($descriptor);
                 $this->displayFiles($descriptor, $isoFile);
             } elseif ($descriptor instanceof Boot) {
-                $this->infoBoot($descriptor);
+                $this->infoBoot($descriptor, $isoFile);
             }
 
             echo PHP_EOL;
         }
     }
 
-    protected function extractAction(string $file, string $extractPath): void
+    protected function listAction(string $file): void
     {
-        if (! is_dir($extractPath)) {
-            $mkdirResult = mkdir($extractPath, 0777, true);
+        $isoFile = new IsoFile($file);
+        $volume = $this->requireVolume($isoFile);
 
-            if ($mkdirResult === false) {
-                throw new Exception('Failed to create extract output directory: ' . $extractPath);
+        foreach ($volume->walk($isoFile) as $entry) {
+            if ($entry->isDirectory) {
+                echo $entry->path . '/' . PHP_EOL;
+            } else {
+                echo $entry->path . "\t" . $entry->size . PHP_EOL;
             }
         }
-
-        $isoFile = new IsoFile($file);
-
-        echo 'Extract ISO file to: ' . $extractPath . PHP_EOL;
-
-        if (isset($isoFile->descriptors[Type::SUPPLEMENTARY_VOLUME_DESC]) && $isoFile->descriptors[Type::SUPPLEMENTARY_VOLUME_DESC] instanceof SupplementaryVolume) {
-            $this->extractFiles($isoFile->descriptors[Type::SUPPLEMENTARY_VOLUME_DESC], $isoFile, $extractPath);
-        } elseif (isset($isoFile->descriptors[Type::PRIMARY_VOLUME_DESC]) && $isoFile->descriptors[Type::PRIMARY_VOLUME_DESC] instanceof PrimaryVolume) {
-            $this->extractFiles($isoFile->descriptors[Type::PRIMARY_VOLUME_DESC], $isoFile, $extractPath);
-        }
-
-        echo 'Extract finished!' . PHP_EOL;
     }
 
-    protected function extractFiles(Volume $volumeDescriptor, IsoFile $isoFile, string $destinationDir): void
+    protected function jsonAction(string $file): void
     {
-        $pathTable = $volumeDescriptor->loadTable($isoFile);
+        $isoFile = new IsoFile($file);
 
-        if ($pathTable === null) {
-            return;
-        }
+        $descriptors = [];
+        foreach ($isoFile->descriptors as $descriptor) {
+            $item = ['type' => $descriptor->getType(), 'name' => $descriptor->name];
 
-        $destinationDir = rtrim($destinationDir, DIRECTORY_SEPARATOR);
-
-        /** @var PathTableRecord $pathRecord */
-        foreach ($pathTable as $pathRecord) {
-            // check extents
-            $extents = $pathRecord->loadExtents($isoFile, $volumeDescriptor->blockSize, ($volumeDescriptor->getType() === Type::SUPPLEMENTARY_VOLUME_DESC), $volumeDescriptor->jolietLevel);
-
-            if ($extents !== false) {
-                /** @var FileDirectory $extentRecord */
-                foreach ($extents as $extentRecord) {
-                    $path = $extentRecord->fileId;
-
-                    if (! $extentRecord->isThis() && ! $extentRecord->isParent()) {
-                        $fullPath = $destinationDir . $pathRecord->getFullPath($pathTable) . $path;
-                        if ($extentRecord->isDirectory()) {
-                            $fullPath .= DIRECTORY_SEPARATOR;
-                        }
-
-                        if (! $extentRecord->isDirectory()) {
-                            $location = $extentRecord->location;
-                            $dataLength = $extentRecord->dataLength;
-                            echo $fullPath . ' (location: ' . $location . ') (length: ' . $dataLength . ')'  . PHP_EOL;
-
-                            $dirPath = dirname($fullPath);
-                            if (! is_dir($dirPath)) {
-                                if (mkdir($dirPath, 0777, true) === false) {
-                                    throw new Exception('Failed to create directory: ' . $dirPath);
-                                }
-                            }
-
-                            $pathRecord->extractFile($isoFile, $volumeDescriptor->blockSize, $location, $dataLength, $fullPath);
-                        } else {
-                            if (! is_dir($fullPath)) {
-                                if (mkdir($fullPath, 0777, true) === false) {
-                                    throw new Exception('Failed to create directory: ' . $fullPath);
-                                }
-                            }
-                        }
-                    }
+            if ($descriptor instanceof Volume) {
+                $item += $this->volumeToArray($descriptor);
+                $item['files'] = array_map(
+                    static fn (IsoEntry $entry): array => $entry->toArray(),
+                    iterator_to_array($descriptor->walk($isoFile), false)
+                );
+            } elseif ($descriptor instanceof Boot) {
+                $item += ['bootSystemId' => $descriptor->bootSysId, 'bootId' => $descriptor->bootId, 'bootCatalogLocation' => $descriptor->bootCatalogLocation];
+                $catalog = $this->loadCatalog($descriptor, $isoFile);
+                if ($catalog !== null) {
+                    $item['bootCatalog'] = $this->catalogToArray($catalog);
                 }
             }
+
+            $descriptors[] = $item;
         }
+
+        echo json_encode(['file' => $file, 'descriptors' => $descriptors], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) . PHP_EOL;
+    }
+
+    protected function extractAction(string $file, string $extractPath): void
+    {
+        $isoFile = new IsoFile($file);
+        $volume = $this->requireVolume($isoFile);
+
+        echo 'Input ISO file: ' . $file . PHP_EOL;
+        echo 'Extract ISO file to: ' . $extractPath . PHP_EOL;
+
+        $count = (new Extractor())->extract($isoFile, $volume, $extractPath, static function (IsoEntry $entry): void {
+            echo $entry->path . ' (location: ' . $entry->location . ') (length: ' . $entry->size . ')' . PHP_EOL;
+        });
+
+        echo 'Extract finished! (' . $count . ' files)' . PHP_EOL;
+    }
+
+    protected function requireVolume(IsoFile $isoFile): Volume
+    {
+        return $isoFile->getPreferredVolume() ?? throw new Exception('No supported volume descriptor found in the ISO file.');
     }
 
     protected function infoVolume(Volume $volumeDescriptor): void
@@ -200,74 +202,168 @@ class IsoTool
         }
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    protected function volumeToArray(Volume $volume): array
+    {
+        return [
+            'systemId' => $volume->systemId,
+            'volumeId' => $volume->volumeId,
+            'appId' => $volume->appId,
+            'publisherId' => $volume->publisherId,
+            'preparerId' => $volume->preparerId,
+            'volumeSpaceSize' => $volume->volumeSpaceSize,
+            'blockSize' => $volume->blockSize,
+            'jolietLevel' => $volume->jolietLevel,
+            'creationDate' => $volume->creationDate?->toIso8601String(),
+            'modificationDate' => $volume->modificationDate?->toIso8601String(),
+            'expirationDate' => $volume->expirationDate?->toIso8601String(),
+            'effectiveDate' => $volume->effectiveDate?->toIso8601String(),
+        ];
+    }
+
     protected function displayFiles(Volume $volumeDescriptor, IsoFile $isoFile): void
     {
-        $pathTable = $volumeDescriptor->loadTable($isoFile);
-
-        if ($pathTable === null) {
-            return;
-        }
-
         echo '   - Files:' . PHP_EOL;
 
-        /** @var PathTableRecord $pathRecord */
-        foreach ($pathTable as $pathRecord) {
-            // check extents
-            $extents = $pathRecord->loadExtents($isoFile, $volumeDescriptor->blockSize, ($volumeDescriptor->getType() === Type::SUPPLEMENTARY_VOLUME_DESC), $volumeDescriptor->jolietLevel);
-
-            if ($extents !== false) {
-                /** @var FileDirectory $extentRecord */
-                foreach ($extents as $extentRecord) {
-                    $path = $extentRecord->fileId;
-
-                    if (! $extentRecord->isThis() && ! $extentRecord->isParent()) {
-                        $fullPath = $pathRecord->getFullPath($pathTable) . $path;
-                        if ($extentRecord->isDirectory()) {
-                            $fullPath .= DIRECTORY_SEPARATOR;
-                        }
-
-                        if (! $extentRecord->isDirectory()) {
-                            $location = $extentRecord->location;
-                            $dataLength = $extentRecord->dataLength;
-                            echo $fullPath . ' (location: ' . $location . ') (length: ' . $dataLength . ')'  . PHP_EOL;
-                        } else {
-                            echo $fullPath . PHP_EOL;
-                        }
-                    }
-                }
+        foreach ($volumeDescriptor->walk($isoFile) as $entry) {
+            if ($entry->isDirectory) {
+                echo $entry->path . '/' . PHP_EOL;
+            } else {
+                echo $entry->path . ' (location: ' . $entry->location . ') (length: ' . $entry->size . ')' . PHP_EOL;
             }
         }
     }
 
-    protected function infoBoot(Boot $bootDescriptor): void
+    protected function infoBoot(Boot $bootDescriptor, IsoFile $isoFile): void
     {
         echo '   - Boot System ID: ' . $bootDescriptor->bootSysId . PHP_EOL;
         echo '   - Boot ID: ' . $bootDescriptor->bootId . PHP_EOL;
         echo '   - Boot Catalog Location: ' . $bootDescriptor->bootCatalogLocation . PHP_EOL;
+
+        $catalog = $this->loadCatalog($bootDescriptor, $isoFile);
+
+        if ($catalog === null) {
+            return;
+        }
+
+        echo '   - Boot Catalog Checksum: ' . ($catalog->validChecksum ? 'valid' : 'INVALID') . PHP_EOL;
+
+        foreach ($catalog->entries as $index => $entry) {
+            echo '   - Boot Entry ' . ($index + 1) . ': ' . ($entry->bootable ? 'bootable' : 'not bootable')
+                . ', platform ' . $entry->getPlatformName()
+                . ', media ' . $entry->getMediaName()
+                . ', load segment 0x' . dechex($entry->loadSegment)
+                . ', sectors ' . $entry->sectorCount
+                . ', load RBA ' . $entry->loadRba . PHP_EOL;
+        }
+    }
+
+    protected function loadCatalog(Boot $bootDescriptor, IsoFile $isoFile): ?BootCatalog
+    {
+        try {
+            return $bootDescriptor->loadCatalog($isoFile);
+        } catch (Exception) {
+            // a broken catalog must not hide the rest of the information
+            return null;
+        }
     }
 
     /**
      * @return array<string, mixed>
      */
-    protected function parseCliArgs(): array
+    protected function catalogToArray(BootCatalog $catalog): array
     {
-        $shortopts = 'f:x::';
+        return [
+            'validChecksum' => $catalog->validChecksum,
+            'manufacturer' => $catalog->manufacturer,
+            'entries' => array_map(static fn (Descriptor\BootEntry $entry): array => [
+                'bootable' => $entry->bootable,
+                'platform' => $entry->getPlatformName(),
+                'media' => $entry->getMediaName(),
+                'loadSegment' => $entry->loadSegment,
+                'sectorCount' => $entry->sectorCount,
+                'loadRba' => $entry->loadRba,
+            ], $catalog->entries),
+        ];
+    }
+
+    /**
+     * @param array<int, string>|null $argv
+     *
+     * @return array<string, mixed>
+     */
+    protected function parseCliArgs(?array $argv = null): array
+    {
+        $shortopts = 'f:x:ljh';
         $longopts = [
             'file:',
-            'extract::',
+            'extract:',
+            'list',
+            'json',
+            'help',
         ];
-        $options = getopt($shortopts, $longopts, $restIndex);
 
-        if ($options === false) {
-            return [];
+        if ($argv === null) {
+            $options = getopt($shortopts, $longopts);
+        } else {
+            $options = $this->parseArgv($argv);
+        }
+
+        return $options === false ? [] : $options;
+    }
+
+    /**
+     * Minimal argv parser used when arguments are injected (tests), mirrors the getopt definition
+     *
+     * @param array<int, string> $argv
+     *
+     * @return array<string, mixed>
+     */
+    protected function parseArgv(array $argv): array
+    {
+        $options = [];
+        $valued = ['f', 'x', 'file', 'extract'];
+
+        for ($i = 0; $i < count($argv); $i++) {
+            $arg = $argv[$i];
+
+            if (str_starts_with($arg, '--')) {
+                $name = substr($arg, 2);
+                $value = null;
+                if (str_contains($name, '=')) {
+                    [$name, $value] = explode('=', $name, 2);
+                }
+                if (in_array($name, $valued, true) && $value === null) {
+                    $value = $argv[++$i] ?? '';
+                }
+                $options[$name] = $value ?? false;
+            } elseif (str_starts_with($arg, '-') && strlen($arg) > 1) {
+                $name = $arg[1];
+                $value = strlen($arg) > 2 ? substr($arg, 2) : null;
+                if (in_array($name, $valued, true) && $value === null) {
+                    $value = $argv[++$i] ?? '';
+                }
+                $options[$name] = $value ?? false;
+            }
         }
 
         return $options;
     }
 
+    protected function firstString(mixed $value): string
+    {
+        if (is_array($value)) {
+            $value = current($value);
+        }
+
+        return is_string($value) ? $value : '';
+    }
+
     protected function displayError(string $error): void
     {
-        echo 'ERROR: ' . $error . PHP_EOL;
+        fwrite(STDERR, 'ERROR: ' . $error . PHP_EOL);
     }
 
     protected function displayHelp(): void
@@ -280,8 +376,17 @@ Usage:
   isotool [options] --file=<path>
 
 Options:
-  -f, --file                     Path for the ISO file (mandatory)
+  -f, --file=<path>              Path for the ISO file (mandatory)
+  -l, --list                     Print only the list of files (path and size)
+  -j, --json                     Print all the information as JSON
   -x, --extract=<extract_path>   Extract files in the given location
+  -h, --help                     Show this help
+
+Exit codes:
+  0  success
+  1  usage error
+  2  invalid file argument
+  3  the ISO could not be read or extracted
 ';
         echo $help;
     }

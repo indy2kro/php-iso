@@ -7,6 +7,7 @@ namespace PhpIso\Descriptor;
 use Carbon\Carbon;
 use PhpIso\Descriptor;
 use PhpIso\FileDirectory;
+use PhpIso\IsoEntry;
 use PhpIso\IsoFile;
 use PhpIso\PathTableRecord;
 use PhpIso\Util\Buffer;
@@ -60,21 +61,20 @@ abstract class Volume extends Descriptor
         $this->volumeSpaceSize = Buffer::readBBO($this->bytes, 8, $offset);
 
         // joliet escape sequence
-        $jolietEscapeSequence = Buffer::getBytes($this->bytes, 32, $offset);
+        $jolietEscapeSequence = Buffer::getRawBytes($this->bytes, 32, $offset);
 
         // Joliet Detection - If this is a Supplementary Volume Descriptor
         if ($this->type === Type::SUPPLEMENTARY_VOLUME_DESC) {
-            // Define Joliet escape sequences as their byte values
+            // Joliet escape sequences: %/@ (level 1), %/C (level 2), %/E (level 3)
             $jolietLevels = [
-                1 => '374764', // %/@ in byte format
-                2 => '374767', // %/C in byte format
-                3 => '374769', // %/E in byte format
+                1 => [0x25, 0x2F, 0x40],
+                2 => [0x25, 0x2F, 0x43],
+                3 => [0x25, 0x2F, 0x45],
             ];
 
-            // Check for Joliet escape sequences indicating Unicode support
             foreach ($jolietLevels as $level => $sequence) {
-                if (str_contains($jolietEscapeSequence, $sequence)) {
-                    $this->jolietLevel = $level; // Record the Joliet level if found
+                if (array_slice($jolietEscapeSequence, 0, 3) === $sequence) {
+                    $this->jolietLevel = $level;
                     break;
                 }
             }
@@ -121,15 +121,70 @@ abstract class Volume extends Descriptor
     }
 
     /**
+     * Walk the whole directory tree of the volume (depth first), without needing the path table
+     *
+     * Entries are untrusted: names are not sanitized here, see Util\SafePath before using them on disk.
+     *
+     * @return \Generator<int, IsoEntry>
+     */
+    public function walk(IsoFile $isoFile, int $maxDepth = 64): \Generator
+    {
+        if ($this->blockSize <= 0) {
+            return;
+        }
+
+        $supplementary = ($this->type === Type::SUPPLEMENTARY_VOLUME_DESC);
+        $visited = [$this->rootDirectory->location => true];
+
+        // explicit stack instead of recursion: a hostile image cannot exhaust the PHP stack
+        /** @var list<array{string, int, int, int}> $stack path, location, length, depth */
+        $stack = [['', $this->rootDirectory->location, $this->rootDirectory->dataLength, 0]];
+
+        while ($stack !== []) {
+            [$base, $location, $length, $depth] = array_pop($stack);
+
+            $records = FileDirectory::loadExtentsSt($isoFile, $this->blockSize, $location, $supplementary, $this->jolietLevel, $length);
+            if ($records === false) {
+                continue;
+            }
+
+            $subDirectories = [];
+            foreach ($records as $record) {
+                if ($record->isThis() || $record->isParent()) {
+                    continue;
+                }
+
+                $path = $base . '/' . $record->fileId;
+
+                yield new IsoEntry($path, $record->fileId, $record->isDirectory(), $record->dataLength, $record->location, $record->recordingDate, $record->isHidden());
+
+                if ($record->isDirectory() && $depth < $maxDepth && ! isset($visited[$record->location])) {
+                    $visited[$record->location] = true;
+                    $subDirectories[] = [$path, $record->location, $record->dataLength, $depth + 1];
+                }
+            }
+
+            // keep alphabetical-ish disk order by pushing in reverse
+            foreach (array_reverse($subDirectories) as $sub) {
+                $stack[] = $sub;
+            }
+        }
+    }
+
+    /**
      * Load the path table
      *
      * @return array<int, PathTableRecord>|null
      */
     public function loadTable(IsoFile $isoFile): ?array
     {
-        // only M-Path should be used for amd64 platforms
         if ($this->isMPathTable()) {
             return $this->loadMPathTable($isoFile);
+        }
+
+        // fall back to the little endian table
+        if ($this->isLPathTable()) {
+            return $this->loadLPathTable($isoFile);
         }
 
         // unknown path table
@@ -159,7 +214,7 @@ abstract class Volume extends Descriptor
      */
     public function loadMPathTable(IsoFile $isoFile): ?array
     {
-        return $this->loadGenPathTable($isoFile, $this->mPathTablePos);
+        return $this->loadGenPathTable($isoFile, $this->mPathTablePos, false);
     }
 
     /**
@@ -169,7 +224,7 @@ abstract class Volume extends Descriptor
      */
     public function loadLPathTable(IsoFile $isoFile): ?array
     {
-        return $this->loadGenPathTable($isoFile, $this->lPathTablePos);
+        return $this->loadGenPathTable($isoFile, $this->lPathTablePos, true);
     }
 
     /**
@@ -177,9 +232,15 @@ abstract class Volume extends Descriptor
      *
      * @return array<int, PathTableRecord>|null
      */
-    protected function loadGenPathTable(IsoFile $isoFile, int $pathTablePos): ?array
+    protected function loadGenPathTable(IsoFile $isoFile, int $pathTablePos, bool $littleEndian = false): ?array
     {
-        if ($pathTablePos === 0 || $this->blockSize === 0) {
+        if ($pathTablePos === 0 || $this->blockSize <= 0 || $this->pathTableSize <= 0) {
+            return null;
+        }
+
+        // a hostile size must not drive huge allocations
+        $fileSize = $isoFile->getSize();
+        if ($fileSize > 0 && ($this->pathTableSize > $fileSize || $pathTablePos * $this->blockSize >= $fileSize)) {
             return null;
         }
 
@@ -189,7 +250,7 @@ abstract class Volume extends Descriptor
 
         $pathTableSize = Buffer::align($this->pathTableSize, $this->blockSize);
 
-        $string = $isoFile->read($pathTableSize);
+        $string = $isoFile->read($fileSize > 0 ? min($pathTableSize, $fileSize - $pathTablePos * $this->blockSize) : $pathTableSize);
 
         if ($string === false) {
             return null;
@@ -207,16 +268,16 @@ abstract class Volume extends Descriptor
         $offset = 1;
         $dirNum = 1;
         $ptRec = new PathTableRecord();
-        $bres = $ptRec->init($bytes, $offset, ($this->type === Type::SUPPLEMENTARY_VOLUME_DESC));
+        $supplementary = ($this->type === Type::SUPPLEMENTARY_VOLUME_DESC);
+        $bres = $ptRec->init($bytes, $offset, $supplementary, $littleEndian);
         while ($bres === true) {
             $ptRec->setDirectoryNumber($dirNum);
-            $ptRec->loadExtents($isoFile, $this->blockSize, true);
 
             $pathTable[$dirNum] = $ptRec;
             $dirNum++;
 
             $ptRec = new PathTableRecord();
-            $bres = $ptRec->init($bytes, $offset, ($this->type === Type::SUPPLEMENTARY_VOLUME_DESC));
+            $bres = $ptRec->init($bytes, $offset, $supplementary, $littleEndian);
         }
 
         return $pathTable;

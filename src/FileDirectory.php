@@ -53,6 +53,11 @@ class FileDirectory
     public const FILE_MODE_MULTI_EXTENT = 0x80;
 
     /**
+     * Size of a logical sector, directory records never cross its boundaries
+     */
+    public const SECTOR_SIZE = 2048;
+
+    /**
      * The length of the "Directory Record"
      */
     public int $dirRecLength = 0;
@@ -118,10 +123,19 @@ class FileDirectory
     {
         $tmp = $offset;
 
+        if (! isset($buffer[$tmp])) {
+            return false;
+        }
+
         $this->dirRecLength = $buffer[$tmp];
         $tmp++;
         if ($this->dirRecLength === 0) {
             return false;
+        }
+
+        // a record shorter than its fixed part, or running past the buffer, is corrupt
+        if ($this->dirRecLength < 34 || ! isset($buffer[$offset + $this->dirRecLength - 1])) {
+            throw new Exception('Invalid directory record length: ' . $this->dirRecLength);
         }
 
         $this->extendedAttrRecordLength = $buffer[$tmp];
@@ -151,11 +165,7 @@ class FileDirectory
             $this->fileId = '..';
             $tmp++;
         } else {
-            if ($this->jolietLevel === 3) {
-                $this->fileId = Buffer::readDString($buffer, $this->fileIdLength, $tmp, $supplementary);
-            } else {
-                $this->fileId = Buffer::readAString($buffer, $this->fileIdLength, $tmp, $supplementary);
-            }
+            $this->fileId = Buffer::readDString($buffer, $this->fileIdLength, $tmp, $supplementary);
 
             $pos = strpos($this->fileId, ';1');
             if ($pos !== false && $pos === strlen($this->fileId) - 2) {
@@ -248,23 +258,39 @@ class FileDirectory
      */
     public function loadExtents(IsoFile $isoFile, int $blockSize, bool $supplementary = false, int $jolietLevel = 0): array|false
     {
-        return self::loadExtentsSt($isoFile, $blockSize, $this->location, $supplementary, $jolietLevel);
+        return self::loadExtentsSt($isoFile, $blockSize, $this->location, $supplementary, $jolietLevel, $this->dataLength);
     }
 
     /**
      * Load the "File Directory Descriptors"(extents) from ISO file
      *
+     * When the directory size is not known, it is read from the "." record at the start of the directory.
+     *
      * @return array<int, FileDirectory>|false
      */
-    public static function loadExtentsSt(IsoFile $isoFile, int $blockSize, int $location, bool $supplementary = false, int $jolietLevel = 0): array|false
+    public static function loadExtentsSt(IsoFile $isoFile, int $blockSize, int $location, bool $supplementary = false, int $jolietLevel = 0, ?int $dataLength = null): array|false
     {
-        if ($isoFile->seek($location * $blockSize, SEEK_SET) === -1) {
+        $sector = self::SECTOR_SIZE;
+
+        $position = $location * $blockSize;
+
+        $string = self::readAt($isoFile, $position, $dataLength === null ? $sector : self::boundedLength($isoFile, $position, $dataLength));
+        if ($string === false) {
             return false;
         }
 
-        $string = $isoFile->read(4096);
-        if ($string === false) {
-            return false;
+        if ($dataLength === null) {
+            // peek at the "." record to find the real size of the directory
+            /** @var array<int, int>|false $first */
+            $first = unpack('C*', $string);
+            $offset = 1;
+            $self = new self();
+            if ($first !== false && $self->init($first, $offset, $supplementary) && $self->dataLength > strlen($string)) {
+                $full = self::readAt($isoFile, $position, self::boundedLength($isoFile, $position, $self->dataLength));
+                if ($full !== false) {
+                    $string = $full;
+                }
+            }
         }
 
         /** @var array<int, int>|false $bytes */
@@ -274,17 +300,58 @@ class FileDirectory
             return false;
         }
 
+        $total = count($bytes);
         $offset = 1;
-        $fdDesc = new self();
-        $fdDesc->jolietLevel = $jolietLevel;
         $extents = [];
 
-        while ($fdDesc->init($bytes, $offset, $supplementary) !== false) {
-            $extents[] = $fdDesc;
+        while ($offset <= $total) {
             $fdDesc = new self();
             $fdDesc->jolietLevel = $jolietLevel;
+
+            try {
+                $found = $fdDesc->init($bytes, $offset, $supplementary);
+            } catch (Exception) {
+                // corrupt record: keep what was parsed so far
+                break;
+            }
+
+            if ($found) {
+                $extents[] = $fdDesc;
+                continue;
+            }
+
+            // records never cross a sector boundary: a zero length means padding up to the next sector
+            $next = (int) (floor(($offset - 1) / $sector) + 1) * $sector + 1;
+            if ($next <= $offset) {
+                break;
+            }
+            $offset = $next;
         }
 
         return $extents;
+    }
+
+    protected static function readAt(IsoFile $isoFile, int $position, int $length): string|false
+    {
+        if ($isoFile->seek($position, SEEK_SET) === -1) {
+            return false;
+        }
+
+        return $isoFile->read($length);
+    }
+
+    /**
+     * Never read more than what is left in the ISO file (protects against hostile sizes)
+     */
+    protected static function boundedLength(IsoFile $isoFile, int $position, int $length): int
+    {
+        $size = $isoFile->getSize();
+
+        // mocks / unknown sizes: fall back to the requested length with a sane cap
+        if ($size <= 0) {
+            return max(0, min($length, 16 * 1024 * 1024));
+        }
+
+        return max(0, min($length, $size - $position));
     }
 }

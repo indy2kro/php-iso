@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 use PhpIso\Cli\IsoTool;
 
-(static function () {
+exit((static function (): int {
     foreach ([__DIR__ . '/../../../autoload.php', __DIR__ . '/../vendor/autoload.php'] as $file) {
         if (file_exists($file)) {
             require $file;
@@ -14,5 +14,6 @@ use PhpIso\Cli\IsoTool;
     }
 
     $application = new IsoTool();
-    $application->run();
-})();
+
+    return $application->run();
+})());
