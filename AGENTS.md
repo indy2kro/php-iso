@@ -10,7 +10,8 @@ composer install
 composer clear-cache
 
 # Run all tests
-./vendor/bin/phpunit --testsuite=" PhpIso Testing Suite"
+composer run tests
+./vendor/bin/phpunit --testsuite="PhpIso Testing Suite"
 
 # Run a single test
 ./vendor/bin/phpunit --filter "TestName" ./tests/SomeTest.php
@@ -19,8 +20,10 @@ composer clear-cache
 ./vendor/bin/phpunit --list-tests
 
 # Static analysis
-composer run cs:check      # PHP CS Fixer / PSR12
+composer run cs:check      # PHP_CodeSniffer / PSR12 (cs:fix to auto fix)
 composer run phpstan       # PHPStan static analysis
+composer run rector:check  # Rector (dry run, same as CI)
+composer run check         # every gate used by CI
 ```
 
 ## Code Style Guidelines
@@ -136,8 +139,8 @@ $date = CarbonImmutable::now()->setTimezone('UTC');
 ## Workflow Patterns
 
 ### Fixing an Issue
-1. Find failing test: `composer run tests:failed`
-2. Run with output: `vendor/bin/phpunit --no-coverage -v`
+1. Run the tests: `composer run tests`
+2. Run a single test with output: `vendor/bin/phpunit --no-coverage --filter TestName`
 3. Fix code, verify locally
 4. Commit with clear message
 5. Run full test suite before pushing
