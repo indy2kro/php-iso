@@ -41,7 +41,17 @@ class Extractor
                 $onFile($entry);
             }
 
-            $isoFile->extractRange($entry->location * $volume->blockSize, $entry->size, $target);
+            $handle = fopen($target, 'wb');
+            if ($handle === false) {
+                throw new Exception('Failed to open file for writing: ' . $target);
+            }
+
+            try {
+                $volume->copyEntryTo($isoFile, $entry, $handle);
+            } finally {
+                fclose($handle);
+            }
+
             $count++;
         }
 

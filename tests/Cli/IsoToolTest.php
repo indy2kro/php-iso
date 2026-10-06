@@ -61,6 +61,43 @@ final class IsoToolTest extends TestCase
         $this->assertStringContainsString("/TEST1.TXT\t6", $output);
     }
 
+    public function testCatPrintsFileContent(): void
+    {
+        [$code, $output] = $this->runTool(['-f', self::FIXTURE, '--cat=/dir1/test2.txt']);
+
+        $this->assertSame(IsoTool::EXIT_OK, $code);
+        $this->assertSame(6, strlen($output));
+    }
+
+    public function testCatOfUnknownFileFails(): void
+    {
+        [$code] = $this->runTool(['-f', self::FIXTURE, '--cat=/nope.txt']);
+
+        $this->assertSame(IsoTool::EXIT_ERROR, $code);
+    }
+
+    public function testFindListsMatchingFiles(): void
+    {
+        [$code, $output] = $this->runTool(['-f', self::FIXTURE, '--find=test?.txt']);
+
+        $this->assertSame(IsoTool::EXIT_OK, $code);
+        $this->assertStringContainsString('/DIR1/DIR2/TEST3.TXT', $output);
+    }
+
+    public function testUnknownOptionIsUsageError(): void
+    {
+        [$code] = $this->runTool(['-f', self::FIXTURE, '--bogus']);
+
+        $this->assertSame(IsoTool::EXIT_USAGE, $code);
+    }
+
+    public function testCatWithoutValueIsUsageError(): void
+    {
+        [$code] = $this->runTool(['-f', self::FIXTURE, '--cat']);
+
+        $this->assertSame(IsoTool::EXIT_USAGE, $code);
+    }
+
     public function testJsonOutputIsValidJson(): void
     {
         [$code, $output] = $this->runTool(['--json', '-f', self::FIXTURE]);

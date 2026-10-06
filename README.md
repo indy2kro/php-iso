@@ -28,13 +28,13 @@ Features
 - Directory tree walking with `Volume::walk()` (no need to process the path table manually)
 - Safe extraction with `Extractor` (names coming from the ISO are validated, nothing can be written outside of the destination)
 - Both-endian (M and L) path tables, directories spanning multiple sectors
+- Reading file content: `Volume::find()`, `search()`, `readFile()`, `openStream()` (multi-extent files are reported once)
 
 Known limitations
 ------------
 - ISO extensions currently not supported:
   - Rock Ridge
 - UDF descriptors are detected, but the UDF file system itself is not read
-- Multi-extent files are listed as several entries
 
 Installation
 ------------
@@ -58,6 +58,8 @@ Options:
   -l, --list                     Print only the list of files (path and size)
   -j, --json                     Print all the information as JSON
   -x, --extract=<extract_path>   Extract files in the given location
+  -c, --cat=<path>               Write the content of a file of the ISO to the standard output
+      --find=<pattern>           List the files matching a pattern (e.g. "*.txt", case insensitive)
   -h, --help                     Show this help
 
 Exit codes:
@@ -76,6 +78,7 @@ Number of descriptors: 3
    - System ID: Win32
    - Volume ID: 25_12_2024
    - App ID: PowerISO
+   - File Structure Version: 1
    - Volume Space Size: 542
    - Volume Set Size: 1
    - Volume SeqNum: 1
@@ -91,14 +94,13 @@ Number of descriptors: 3
    - Expiration Date: 
    - Effective Date: 
    - Files:
-.
-..
-1MB.PNG
+/1MB.PNG (location: 30) (length: 1048576)
 
   - Supplementary volume descriptor
    - System ID: Win32
    - Volume ID: 25_12_2024
    - App ID: PowerISO
+   - File Structure Version: 1
    - Volume Space Size: 542
    - Volume Set Size: 1
    - Volume SeqNum: 1
@@ -113,13 +115,17 @@ Number of descriptors: 3
    - Modification Date: 2024-12-25 14:01:20
    - Expiration Date: 
    - Effective Date: 
+   - Joliet Level: 3
    - Files:
-.
-..
-1mb.png
+/1mb.png (location: 30) (length: 1048576)
 
   - Terminator descriptor
 
+Other examples:
+  isotool -f image.iso --list              # path and size of every file
+  isotool -f image.iso --find "*.txt"       # search by name (case insensitive)
+  isotool -f image.iso --cat /DIR/FILE.TXT > file.txt
+  isotool -f image.iso --json | jq .
 ```
 
 Usage

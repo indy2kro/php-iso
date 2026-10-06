@@ -29,7 +29,12 @@ class IsoTool
      */
     public function run(?array $argv = null): int
     {
-        $options = $this->parseCliArgs($argv);
+        try {
+            $options = $this->parseCliArgs($argv);
+        } catch (Exception $ex) {
+            $this->displayError($ex->getMessage());
+            return self::EXIT_USAGE;
+        }
 
         if (isset($options['h']) || isset($options['help'])) {
             $this->displayHelp();
@@ -49,12 +54,16 @@ class IsoTool
         }
 
         $extractPath = $this->firstString($options['extract'] ?? $options['x'] ?? null);
+        $catPath = $this->firstString($options['cat'] ?? $options['c'] ?? null);
+        $find = $this->firstString($options['find'] ?? null);
         $json = isset($options['json']) || isset($options['j']);
         $list = isset($options['list']) || isset($options['l']);
 
-        if (isset($options['extract']) || isset($options['x'])) {
-            if ($extractPath === '') {
-                $this->displayError('The extract option requires a destination directory');
+        // options taking a value: long name => [value, short name]
+        $valued = ['extract' => [$extractPath, 'x'], 'cat' => [$catPath, 'c'], 'find' => [$find, 'find']];
+        foreach ($valued as $name => [$value, $short]) {
+            if ((isset($options[$name]) || isset($options[$short])) && $value === '') {
+                $this->displayError('The ' . $name . ' option requires a value');
                 return self::EXIT_USAGE;
             }
         }
@@ -64,6 +73,10 @@ class IsoTool
 
             if ($extractPath !== '') {
                 $this->extractAction($file, $extractPath);
+            } elseif ($catPath !== '') {
+                $this->catAction($file, $catPath);
+            } elseif ($find !== '') {
+                $this->findAction($file, $find);
             } elseif ($json) {
                 $this->jsonAction($file);
             } elseif ($list) {
@@ -125,6 +138,35 @@ class IsoTool
             } else {
                 echo $entry->path . "\t" . $entry->size . PHP_EOL;
             }
+        }
+    }
+
+    protected function catAction(string $file, string $path): void
+    {
+        $isoFile = new IsoFile($file);
+        $volume = $this->requireVolume($isoFile);
+
+        $entry = $volume->find($isoFile, $path);
+        if (! $entry instanceof IsoEntry) {
+            throw new Exception('File not found in the ISO: ' . $path);
+        }
+
+        $output = fopen('php://output', 'wb');
+        if ($output === false) {
+            throw new Exception('Cannot open the standard output');
+        }
+
+        $volume->copyEntryTo($isoFile, $entry, $output);
+        fclose($output);
+    }
+
+    protected function findAction(string $file, string $pattern): void
+    {
+        $isoFile = new IsoFile($file);
+        $volume = $this->requireVolume($isoFile);
+
+        foreach ($volume->search($isoFile, $pattern) as $entry) {
+            echo $entry->path . ($entry->isDirectory ? '/' : "\t" . $entry->size) . PHP_EOL;
         }
     }
 
@@ -290,41 +332,25 @@ class IsoTool
     }
 
     /**
-     * @param array<int, string>|null $argv
+     * Parse the command line (own parser: getopt silently ignores options with a missing value)
+     *
+     * @param array<int, string>|null $argv defaults to the process arguments
      *
      * @return array<string, mixed>
+     *
+     * @throws Exception on unknown options
      */
     protected function parseCliArgs(?array $argv = null): array
     {
-        $shortopts = 'f:x:ljh';
-        $longopts = [
-            'file:',
-            'extract:',
-            'list',
-            'json',
-            'help',
-        ];
-
         if ($argv === null) {
-            $options = getopt($shortopts, $longopts);
-        } else {
-            $options = $this->parseArgv($argv);
+            $raw = $_SERVER['argv'] ?? [];
+            $argv = is_array($raw) ? array_values(array_filter(array_slice($raw, 1), is_string(...))) : [];
         }
 
-        return $options === false ? [] : $options;
-    }
+        $valued = ['f', 'x', 'c', 'file', 'extract', 'cat', 'find'];
+        $flags = ['l', 'j', 'h', 'list', 'json', 'help'];
 
-    /**
-     * Minimal argv parser used when arguments are injected (tests), mirrors the getopt definition
-     *
-     * @param array<int, string> $argv
-     *
-     * @return array<string, mixed>
-     */
-    protected function parseArgv(array $argv): array
-    {
         $options = [];
-        $valued = ['f', 'x', 'file', 'extract'];
 
         for ($i = 0; $i < count($argv); $i++) {
             $arg = $argv[$i];
@@ -335,17 +361,28 @@ class IsoTool
                 if (str_contains($name, '=')) {
                     [$name, $value] = explode('=', $name, 2);
                 }
-                if (in_array($name, $valued, true) && $value === null) {
-                    $value = $argv[++$i] ?? '';
-                }
-                $options[$name] = $value ?? false;
             } elseif (str_starts_with($arg, '-') && strlen($arg) > 1) {
                 $name = $arg[1];
                 $value = strlen($arg) > 2 ? substr($arg, 2) : null;
-                if (in_array($name, $valued, true) && $value === null) {
-                    $value = $argv[++$i] ?? '';
+            } else {
+                throw new Exception('Unexpected argument: ' . $arg);
+            }
+
+            if (in_array($name, $valued, true)) {
+                // a value is the next argument, unless that one is another option
+                if ($value === null) {
+                    $next = $argv[$i + 1] ?? '';
+                    $value = str_starts_with($next, '-') ? '' : $next;
+                    if ($value !== '') {
+                        $i++;
+                    }
                 }
-                $options[$name] = $value ?? false;
+
+                $options[$name] = $value;
+            } elseif (in_array($name, $flags, true)) {
+                $options[$name] = false;
+            } else {
+                throw new Exception('Unknown option: ' . $arg);
             }
         }
 
@@ -380,6 +417,8 @@ Options:
   -l, --list                     Print only the list of files (path and size)
   -j, --json                     Print all the information as JSON
   -x, --extract=<extract_path>   Extract files in the given location
+  -c, --cat=<path>               Write the content of a file of the ISO to the standard output
+      --find=<pattern>           List the files matching a pattern (e.g. "*.txt", case insensitive)
   -h, --help                     Show this help
 
 Exit codes:
