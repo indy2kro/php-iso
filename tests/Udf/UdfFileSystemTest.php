@@ -85,7 +85,7 @@ final class UdfFileSystemTest extends TestCase
     }
 
     /**
-     * @return array<string, array<array-key, mixed>>
+     * @return array<string, mixed>
      */
     private static function sampleTree(): array
     {
@@ -112,8 +112,8 @@ final class UdfFileSystemTest extends TestCase
             if (is_array($content)) {
                 $result[$path] = null;
                 $result += self::expected($content, $path);
-            } else {
-                $result[$path] = (string) $content;
+            } elseif (is_string($content)) {
+                $result[$path] = $content;
             }
         }
 
@@ -257,7 +257,7 @@ final class UdfFileSystemTest extends TestCase
     {
         $isoFile = new IsoFile(dirname(__DIR__, 2) . '/fixtures/' . $fixture);
         $volume = $isoFile->getPreferredVolume();
-        $this->assertNotNull($volume);
+        $this->assertInstanceOf(\PhpIso\Descriptor\Volume::class, $volume);
         $udf = $this->udf($isoFile);
 
         $summary = static function (FileSystem $fileSystem) use ($isoFile): array {

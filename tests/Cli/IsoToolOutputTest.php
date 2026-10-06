@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PhpIso\Test\Cli;
 
 use PhpIso\Cli\IsoTool;
+use PhpIso\Test\Support\IsoBuilder;
 use PHPUnit\Framework\TestCase;
 
 final class IsoToolOutputTest extends TestCase
@@ -33,6 +34,14 @@ final class IsoToolOutputTest extends TestCase
         } elseif (is_file($path)) {
             unlink($path);
         }
+    }
+
+    private function imageWithoutFileSystem(): string
+    {
+        $path = (new IsoBuilder())->addTerminator(0)->save();
+        $this->cleanup[] = $path;
+
+        return $path;
     }
 
     /**
@@ -127,7 +136,7 @@ final class IsoToolOutputTest extends TestCase
 
     public function testListOfAnImageWithoutVolumeIsAnError(): void
     {
-        [$code] = $this->runTool(['-l', '-f', self::FIXTURES . 'udf.iso']);
+        [$code] = $this->runTool(['-l', '-f', $this->imageWithoutFileSystem()]);
 
         $this->assertSame(IsoTool::EXIT_ERROR, $code);
     }
@@ -137,7 +146,7 @@ final class IsoToolOutputTest extends TestCase
         $destination = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'php-iso-cli-' . bin2hex(random_bytes(4));
         $this->cleanup[] = $destination;
 
-        [$code] = $this->runTool(['-f', self::FIXTURES . 'udf.iso', '--extract=' . $destination]);
+        [$code] = $this->runTool(['-f', $this->imageWithoutFileSystem(), '--extract=' . $destination]);
 
         $this->assertSame(IsoTool::EXIT_ERROR, $code);
     }

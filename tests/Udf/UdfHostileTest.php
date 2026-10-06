@@ -17,7 +17,7 @@ use PHPUnit\Framework\TestCase;
  */
 final class UdfHostileTest extends TestCase
 {
-    private const PARTITION_START = 260;
+    private const int PARTITION_START = 260;
 
     /**
      * @var array<int, string>

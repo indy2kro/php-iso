@@ -19,40 +19,40 @@ use PhpIso\Util\IsoDate;
  * For the entries produced here "location" and the extents hold absolute byte offsets in the image
  * (a negative offset is a sparse extent, read as zeros).
  */
-final class UdfFileSystem implements FileSystem
+final readonly class UdfFileSystem implements FileSystem
 {
     use BrowsesEntries;
 
-    private const SECTOR = 2048;
+    private const int SECTOR = 2048;
 
-    private const TAG_PRIMARY_VOLUME = 1;
-    private const TAG_ANCHOR = 2;
-    private const TAG_PARTITION = 5;
-    private const TAG_LOGICAL_VOLUME = 6;
-    private const TAG_TERMINATING = 8;
-    private const TAG_FILE_SET = 256;
-    private const TAG_FILE_ID = 257;
-    private const TAG_ALLOCATION_EXTENT = 258;
-    private const TAG_FILE_ENTRY = 261;
-    private const TAG_EXTENDED_FILE_ENTRY = 266;
+    private const int TAG_PRIMARY_VOLUME = 1;
+    private const int TAG_ANCHOR = 2;
+    private const int TAG_PARTITION = 5;
+    private const int TAG_LOGICAL_VOLUME = 6;
+    private const int TAG_TERMINATING = 8;
+    private const int TAG_FILE_SET = 256;
+    private const int TAG_FILE_ID = 257;
+    private const int TAG_ALLOCATION_EXTENT = 258;
+    private const int TAG_FILE_ENTRY = 261;
+    private const int TAG_EXTENDED_FILE_ENTRY = 266;
 
-    private const FILE_TYPE_DIRECTORY = 4;
+    private const int FILE_TYPE_DIRECTORY = 4;
 
     /**
      * Limits that keep a crafted image from exhausting memory or looping
      */
-    private const MAX_VDS_SECTORS = 64;
-    private const MAX_EXTENTS = 100000;
-    private const MAX_CONTINUATIONS = 64;
+    private const int MAX_VDS_SECTORS = 64;
+    private const int MAX_EXTENTS = 100000;
+    private const int MAX_CONTINUATIONS = 64;
 
     /**
      * @param array<int, int> $partitionStarts partition map index => first sector of the partition
      */
     private function __construct(
-        private readonly array $partitionStarts,
-        private readonly int $rootPartition,
-        private readonly int $rootBlock,
-        public readonly string $volumeId,
+        private array $partitionStarts,
+        private int $rootPartition,
+        private int $rootBlock,
+        public string $volumeId,
     ) {
     }
 
