@@ -164,11 +164,7 @@ abstract class Volume extends Descriptor
                         $pending = null;
                     }
 
-                    $extents = $pending === null ? [] : $pending->extents;
-                    $extents[] = [$record->location, $record->dataLength];
-                    $total = array_sum(array_column($extents, 1));
-                    $first = $pending ?? new IsoEntry($path, $record->fileId, false, 0, $record->location, $record->recordingDate, $record->isHidden());
-                    $pending = new IsoEntry($first->path, $first->name, false, $total, $first->location, $first->recordingDate, $first->isHidden, $extents);
+                    $pending = $this->appendExtent($pending, $path, $record);
 
                     if (! $record->isMultiExtent()) {
                         yield $pending;
@@ -195,6 +191,21 @@ abstract class Volume extends Descriptor
                 $stack[] = $sub;
             }
         }
+    }
+
+    /**
+     * Add the extent of a record to the multi-extent entry being built (a new entry when there is none yet)
+     */
+    protected function appendExtent(?IsoEntry $pending, string $path, FileDirectory $record): IsoEntry
+    {
+        if (! $pending instanceof IsoEntry) {
+            return new IsoEntry($path, $record->fileId, false, $record->dataLength, $record->location, $record->recordingDate, $record->isHidden(), [[$record->location, $record->dataLength]]);
+        }
+
+        $extents = $pending->extents;
+        $extents[] = [$record->location, $record->dataLength];
+
+        return new IsoEntry($pending->path, $pending->name, false, $pending->size + $record->dataLength, $pending->location, $pending->recordingDate, $pending->isHidden, $extents);
     }
 
     /**
