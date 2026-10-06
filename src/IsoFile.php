@@ -131,6 +131,6 @@ class IsoFile
             }
         }
 
-        return count($this->descriptors) > 0;
+        return $this->descriptors !== [];
     }
 }
