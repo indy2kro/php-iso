@@ -6,6 +6,7 @@ namespace PhpIso\Descriptor;
 
 use Carbon\Carbon;
 use PhpIso\Descriptor;
+use PhpIso\Exception;
 use PhpIso\FileDirectory;
 use PhpIso\IsoEntry;
 use PhpIso\IsoFile;
@@ -148,12 +149,30 @@ abstract class Volume extends Descriptor
             }
 
             $subDirectories = [];
+            $pending = null;
             foreach ($records as $record) {
                 if ($record->isThis() || $record->isParent()) {
                     continue;
                 }
 
                 $path = $base . '/' . $record->fileId;
+
+                // a multi-extent file is stored as several records (all but the last flagged), report it once
+                if (! $record->isDirectory() && ($record->isMultiExtent() || $pending !== null)) {
+                    if ($pending !== null && $pending->name !== $record->fileId) {
+                        yield $pending;
+                        $pending = null;
+                    }
+
+                    $pending = $this->appendExtent($pending, $path, $record);
+
+                    if (! $record->isMultiExtent()) {
+                        yield $pending;
+                        $pending = null;
+                    }
+
+                    continue;
+                }
 
                 yield new IsoEntry($path, $record->fileId, $record->isDirectory(), $record->dataLength, $record->location, $record->recordingDate, $record->isHidden());
 
@@ -163,11 +182,122 @@ abstract class Volume extends Descriptor
                 }
             }
 
+            if ($pending !== null) {
+                yield $pending;
+            }
+
             // keep alphabetical-ish disk order by pushing in reverse
             foreach (array_reverse($subDirectories) as $sub) {
                 $stack[] = $sub;
             }
         }
+    }
+
+    /**
+     * Add the extent of a record to the multi-extent entry being built (a new entry when there is none yet)
+     */
+    protected function appendExtent(?IsoEntry $pending, string $path, FileDirectory $record): IsoEntry
+    {
+        if (! $pending instanceof IsoEntry) {
+            return new IsoEntry($path, $record->fileId, false, $record->dataLength, $record->location, $record->recordingDate, $record->isHidden(), [[$record->location, $record->dataLength]]);
+        }
+
+        $extents = $pending->extents;
+        $extents[] = [$record->location, $record->dataLength];
+
+        return new IsoEntry($pending->path, $pending->name, false, $pending->size + $record->dataLength, $pending->location, $pending->recordingDate, $pending->isHidden, $extents);
+    }
+
+    /**
+     * Find an entry by its path (exact match first, then case insensitive: ISO 9660 names are usually upper case)
+     */
+    public function find(IsoFile $isoFile, string $path): ?IsoEntry
+    {
+        $wanted = '/' . trim(str_replace('\\', '/', $path), '/');
+        $insensitive = null;
+
+        foreach ($this->walk($isoFile) as $entry) {
+            if ($entry->path === $wanted) {
+                return $entry;
+            }
+
+            if ($insensitive === null && strcasecmp($entry->path, $wanted) === 0) {
+                $insensitive = $entry;
+            }
+        }
+
+        return $insensitive;
+    }
+
+    /**
+     * Entries whose name matches a shell style pattern (case insensitive), e.g. "*.txt"
+     *
+     * @return \Generator<int, IsoEntry>
+     */
+    public function search(IsoFile $isoFile, string $pattern): \Generator
+    {
+        foreach ($this->walk($isoFile) as $entry) {
+            if (fnmatch($pattern, $entry->name, FNM_CASEFOLD)) {
+                yield $entry;
+            }
+        }
+    }
+
+    /**
+     * Copy the content of a file entry (all of its extents) to an open stream
+     *
+     * @param resource $output
+     *
+     * @throws Exception
+     */
+    public function copyEntryTo(IsoFile $isoFile, IsoEntry $entry, mixed $output): void
+    {
+        if ($entry->isDirectory) {
+            throw new Exception('Cannot read the content of a directory: ' . $entry->path);
+        }
+
+        foreach ($entry->getExtents() as [$location, $size]) {
+            $isoFile->copyRange($location * $this->blockSize, $size, $output);
+        }
+    }
+
+    /**
+     * Open the content of a file entry as a readable stream (memory first, temporary file for big files)
+     *
+     * @return resource
+     *
+     * @throws Exception
+     */
+    public function openStream(IsoFile $isoFile, IsoEntry $entry): mixed
+    {
+        $stream = fopen('php://temp', 'w+b');
+
+        if ($stream === false) {
+            throw new Exception('Failed to open a temporary stream');
+        }
+
+        $this->copyEntryTo($isoFile, $entry, $stream);
+        rewind($stream);
+
+        return $stream;
+    }
+
+    /**
+     * Read the whole content of a file entry
+     *
+     * @throws Exception when the file is bigger than $maxSize
+     */
+    public function readFile(IsoFile $isoFile, IsoEntry $entry, int $maxSize = IsoFile::MAX_READ_LENGTH): string
+    {
+        if ($entry->size > $maxSize) {
+            throw new Exception('File is too big to be read in memory: ' . $entry->path);
+        }
+
+        $stream = $this->openStream($isoFile, $entry);
+        $content = stream_get_contents($stream);
+        fclose($stream);
+
+        return $content === false ? '' : $content;
     }
 
     /**

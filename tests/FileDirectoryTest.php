@@ -89,7 +89,7 @@ final class FileDirectoryTest extends TestCase
 
     public function testLoadExtentsSt(): void
     {
-        $isoFileMock = $this->createMock(IsoFile::class);
+        $isoFileMock = $this->createStub(IsoFile::class);
         $isoFileMock->method('seek')->willReturn(0);
         $isoFileMock->method('read')->willReturn(pack('C*', ...array_fill(0, 4096, 0)));
 

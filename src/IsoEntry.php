@@ -19,7 +19,23 @@ final readonly class IsoEntry
         public int $location,
         public ?Carbon $recordingDate,
         public bool $isHidden,
+        /**
+         * Extents (location in blocks, size in bytes) of a multi-extent file, empty for a regular entry
+         *
+         * @var list<array{int, int}>
+         */
+        public array $extents = [],
     ) {
+    }
+
+    /**
+     * The (location, size) pairs holding the data of the file, in order
+     *
+     * @return list<array{int, int}>
+     */
+    public function getExtents(): array
+    {
+        return $this->extents === [] ? [[$this->location, $this->size]] : $this->extents;
     }
 
     /**
@@ -35,6 +51,7 @@ final readonly class IsoEntry
             'location' => $this->location,
             'date' => $this->recordingDate?->toIso8601String(),
             'hidden' => $this->isHidden,
+            'extents' => count($this->getExtents()),
         ];
     }
 }

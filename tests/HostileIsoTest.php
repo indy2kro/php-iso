@@ -150,6 +150,42 @@ final class HostileIsoTest extends TestCase
         $this->assertSame([], $this->walk($this->open($builder)));
     }
 
+    public function testDirectoryLocatedBeyondTheEndOfTheFileIsSkipped(): void
+    {
+        $builder = $this->baseImage()
+            ->setDirectory(18, [IsoBuilder::record("\0", 18, 2048, 2), IsoBuilder::record("\1", 18, 2048, 2), IsoBuilder::record('GONE', 99999, 2048, 2), IsoBuilder::record('A.TXT', 19, 0)]);
+
+        $paths = array_map(static fn (IsoEntry $entry): string => $entry->path, $this->walk($this->open($builder)));
+
+        $this->assertSame(['/GONE', '/A.TXT'], $paths);
+    }
+
+    public function testPathTableOutsideOfTheFileIsIgnored(): void
+    {
+        $isoFile = $this->open($this->baseImage(2048, 100, 99999));
+        $volume = $isoFile->getPreferredVolume();
+        $this->assertInstanceOf(\PhpIso\Descriptor\Volume::class, $volume);
+
+        $this->assertNull($volume->loadTable($isoFile));
+    }
+
+    public function testPathTableWithZeroSizeIsIgnored(): void
+    {
+        $isoFile = $this->open($this->baseImage(2048, 0, 19));
+        $volume = $isoFile->getPreferredVolume();
+        $this->assertInstanceOf(\PhpIso\Descriptor\Volume::class, $volume);
+
+        $this->assertNull($volume->loadTable($isoFile));
+    }
+
+    public function testTruncatedImageAfterTheDescriptorsHasNoFiles(): void
+    {
+        $path = (new IsoBuilder())->addVolumeDescriptor(0)->addTerminator(1)->save();
+        $this->cleanup[] = $path;
+
+        $this->assertSame([], $this->walk(new IsoFile($path)));
+    }
+
     public function testZeroBlockSizeProducesNoEntries(): void
     {
         $this->assertSame([], $this->walk($this->open($this->baseImage(2048, 0, 0, 0))));

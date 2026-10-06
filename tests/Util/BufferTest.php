@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PhpIso\Test\Util;
 
+use Iterator;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use PhpIso\Util\Buffer;
 use PhpIso\Exception;
@@ -214,6 +216,78 @@ final class BufferTest extends TestCase
         $offset = 0;
         $this->assertSame(4294967295, Buffer::readInt32($buffer, $offset));
         $this->assertSame(4, $offset);
+    }
+
+    /**
+     * @return Iterator<string, array{array<int, int>}>
+     */
+    public static function truncatedInt32Buffers(): Iterator
+    {
+        yield 'empty' => [[]];
+        yield 'one byte' => [[1]];
+        yield 'two bytes' => [[1, 2]];
+        yield 'three bytes' => [[1, 2, 3]];
+    }
+
+    /**
+     * @param array<int, int> $buffer
+     */
+    #[DataProvider('truncatedInt32Buffers')]
+    public function testReadInt32WithEveryTruncationThrows(array $buffer): void
+    {
+        $offset = 0;
+        $this->expectException(Exception::class);
+        Buffer::readInt32($buffer, $offset);
+    }
+
+    public function testReadBBOWithMissingSecondHalfThrows(): void
+    {
+        $buffer = [1, 0, 0, 0];
+        $offset = 0;
+        $this->expectException(Exception::class);
+        Buffer::readBBO($buffer, 8, $offset);
+    }
+
+    public function testReadBBOWithDisagreeingHalvesKeepsTheFieldAligned(): void
+    {
+        $buffer = [1, 0, 0, 0, 0, 0, 0, 2];
+        $offset = 0;
+
+        $this->assertSame(1, Buffer::readBBO($buffer, 8, $offset));
+        $this->assertSame(8, $offset);
+    }
+
+    public function testGetRawBytesReturnsByteValues(): void
+    {
+        $buffer = [1, 2, 3, 4];
+        $offset = 1;
+
+        $this->assertSame([2, 3], Buffer::getRawBytes($buffer, 2, $offset));
+        $this->assertSame(3, $offset);
+    }
+
+    public function testGetRawBytesPastTheEndThrows(): void
+    {
+        $buffer = [1, 2];
+        $offset = 1;
+        $this->expectException(Exception::class);
+        Buffer::getRawBytes($buffer, 5, $offset);
+    }
+
+    public function testJolietStringWrittenAsAsciiFallsBackToAscii(): void
+    {
+        $buffer = array_map(ord(...), str_split('WinISO software'));
+        $offset = 0;
+
+        $this->assertSame('WinISO software', Buffer::readAString($buffer, 15, $offset, true, true));
+    }
+
+    public function testUtf16StringIsDecodedWhenFallbackIsAllowed(): void
+    {
+        $buffer = array_map(ord(...), str_split("\0A\0B"));
+        $offset = 0;
+
+        $this->assertSame('AB', Buffer::readDString($buffer, 4, $offset, true, true));
     }
 
     public function testReadInt32BufferTooShort(): void

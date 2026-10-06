@@ -81,22 +81,42 @@ class IsoFile
         }
 
         try {
-            $remaining = $length;
-            while ($remaining > 0) {
-                $chunk = $this->read(min(8192, $remaining));
-
-                if ($chunk === false || $chunk === '') {
-                    throw new Exception('Unexpected end of ISO data while extracting');
-                }
-
-                if (fwrite($writeHandle, $chunk) === false) {
-                    throw new Exception('Failed to write to file: ' . $destinationFile);
-                }
-
-                $remaining -= strlen($chunk);
-            }
+            $this->copyRange($offset, $length, $writeHandle);
         } finally {
             fclose($writeHandle);
+        }
+    }
+
+    /**
+     * Copy a byte range of the ISO to an open stream
+     *
+     * @param resource $output
+     *
+     * @throws Exception
+     */
+    public function copyRange(int $offset, int $length, mixed $output): void
+    {
+        if ($offset < 0 || $length < 0 || $offset + $length > $this->getSize()) {
+            throw new Exception('Requested range is outside of the ISO file');
+        }
+
+        if ($this->seek($offset, SEEK_SET) === -1) {
+            throw new Exception('Failed to seek to location');
+        }
+
+        $remaining = $length;
+        while ($remaining > 0) {
+            $chunk = $this->read(min(8192, $remaining));
+
+            if ($chunk === false || $chunk === '') {
+                throw new Exception('Unexpected end of ISO data while reading');
+            }
+
+            if (fwrite($output, $chunk) === false) {
+                throw new Exception('Failed to write the data');
+            }
+
+            $remaining -= strlen($chunk);
         }
     }
 
