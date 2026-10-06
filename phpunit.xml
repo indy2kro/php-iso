@@ -23,7 +23,7 @@
     </source>
     <testsuites>
         <testsuite name="PhpIso Testing Suite">
-            <directory suffix=".php">./tests/</directory>
+            <directory suffix="Test.php">./tests/</directory>
         </testsuite>
     </testsuites>
 </phpunit>

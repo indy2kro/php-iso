@@ -16,6 +16,18 @@ use PhpIso\Descriptor\Volume;
 class IsoFile
 {
     /**
+     * Upper bound for a single read, protects against sizes taken from a crafted image
+     */
+    public const MAX_READ_LENGTH = 64 * 1024 * 1024;
+
+    /**
+     * Descriptors of a type that was already present (the first one wins), kept in file order
+     *
+     * @var array<int, Descriptor>
+     */
+    public array $additionalDescriptors = [];
+
+    /**
      * @var array<int, Descriptor>
      */
     public array $descriptors = [];
@@ -137,7 +149,7 @@ class IsoFile
 
     public function read(int $length): string|false
     {
-        if ($length < 1) {
+        if ($length < 1 || $length > self::MAX_READ_LENGTH) {
             return false;
         }
 
@@ -191,10 +203,11 @@ class IsoFile
                 }
 
                 if (isset($this->descriptors[$descriptor->getType()]) && ! ($descriptor instanceof UdfDescriptor)) {
-                    throw new Exception('Descriptor ' . $descriptor->getType() . ' already exists');
+                    // e.g. an enhanced volume descriptor next to a Joliet one: keep the first, do not stop reading
+                    $this->additionalDescriptors[] = $descriptor;
+                } else {
+                    $this->descriptors[$descriptor->getType()] = $descriptor;
                 }
-
-                $this->descriptors[$descriptor->getType()] = $descriptor;
             } catch (Exception $ex) {
                 if ($foundTerminator) {
                     break;
