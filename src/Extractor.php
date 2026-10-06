@@ -19,7 +19,7 @@ class Extractor
      *
      * @throws Exception
      */
-    public function extract(IsoFile $isoFile, Volume $volume, string $destinationDir, ?callable $onFile = null): int
+    public function extract(IsoFile $isoFile, FileSystem $volume, string $destinationDir, ?callable $onFile = null): int
     {
         if (! is_dir($destinationDir) && ! mkdir($destinationDir, 0777, true) && ! is_dir($destinationDir)) {
             throw new Exception('Failed to create extract output directory: ' . $destinationDir);

@@ -12,6 +12,7 @@ use PhpIso\Descriptor\Type;
 use PhpIso\Descriptor\UdfDescriptor;
 use PhpIso\Descriptor\UdfTeaDescriptor;
 use PhpIso\Descriptor\Volume;
+use PhpIso\Udf\UdfFileSystem;
 
 class IsoFile
 {
@@ -26,6 +27,10 @@ class IsoFile
      * @var array<int, Descriptor>
      */
     public array $additionalDescriptors = [];
+
+    private ?UdfFileSystem $udf = null;
+
+    private bool $udfLoaded = false;
 
     /**
      * @var array<int, Descriptor>
@@ -148,6 +153,31 @@ class IsoFile
         $descriptor = $this->descriptors[Type::BOOT_RECORD_DESC] ?? null;
 
         return $descriptor instanceof Boot ? $descriptor : null;
+    }
+
+    /**
+     * The UDF file system of the image, null when there is none
+     *
+     * @throws Exception when the UDF structures are present but unsupported or corrupt
+     */
+    public function getUdfFileSystem(): ?UdfFileSystem
+    {
+        if (! $this->udfLoaded) {
+            $this->udf = UdfFileSystem::open($this);
+            $this->udfLoaded = true;
+        }
+
+        return $this->udf;
+    }
+
+    /**
+     * The file system to browse: the preferred ISO 9660 volume, or the UDF file system for UDF only images
+     *
+     * @throws Exception when only an unsupported UDF file system is present
+     */
+    public function getFileSystem(): ?FileSystem
+    {
+        return $this->getPreferredVolume() ?? $this->getUdfFileSystem();
     }
 
     /**
