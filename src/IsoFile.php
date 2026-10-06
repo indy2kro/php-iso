@@ -80,7 +80,7 @@ class IsoFile
         $this->fileHandle = null;
     }
 
-    protected function processFile(): bool
+    protected function processFile(): void
     {
         if ($this->seek(16 * 2048, SEEK_SET) === -1) {
             return false;
@@ -130,7 +130,5 @@ class IsoFile
                 continue;
             }
         }
-
-        return $this->descriptors !== [];
     }
 }
