@@ -6,6 +6,6 @@ namespace PhpIso\Descriptor;
 
 class UdfNsr2Descriptor extends UdfDescriptor
 {
-    public string $name = 'UDF NSR02 descriptor';
-    protected int $type = Type::UDF_NSR2_VOLUME_DESC;
+    protected const string NAME = 'UDF NSR02 descriptor';
+    protected const int TYPE = Type::UDF_NSR2_VOLUME_DESC;
 }

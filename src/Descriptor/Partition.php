@@ -13,42 +13,41 @@ class Partition extends Descriptor
     /**
      * The "Partition Volume Descriptors"'s System Identifier
      */
-    public string $systemID;
+    public readonly string $systemID;
 
     /**
      * The "Partition Volume Descriptors"'s Partition Identifier
      */
-    public string $volPartitionID;
+    public readonly string $volPartitionID;
 
     /**
      * The "Partition Volume Descriptors"'s Partition location
      */
-    public int $volPartitionLocation;
+    public readonly int $volPartitionLocation;
 
     /**
      * The "Partition Volume Descriptors"'s Partition size
      */
-    public int $volPartitionSize;
+    public readonly int $volPartitionSize;
 
-    public string $name = 'Partition volume descriptor';
+    protected const string NAME = 'Partition volume descriptor';
 
-    protected int $type = Type::PARTITION_VOLUME_DESC;
+    protected const int TYPE = Type::PARTITION_VOLUME_DESC;
 
-    public function init(IsoFile $isoFile, int &$offset): void
+    /**
+     * @param array<int, int> $bytes the descriptor sector
+     * @param int $offset position after the descriptor header, moved after the parsed fields
+     */
+    public function __construct(string $stdId, int $version, array $bytes, int &$offset)
     {
-        if ($this->bytes === null) {
-            return;
-        }
+        parent::__construct($stdId, $version);
 
-        Buffer::getRawBytes($this->bytes, 1, $offset);
+        Buffer::getRawBytes($bytes, 1, $offset);
 
-        $this->systemID = Buffer::readAString($this->bytes, 32, $offset);
-        $this->volPartitionID = Buffer::readDString($this->bytes, 32, $offset);
+        $this->systemID = Buffer::readAString($bytes, 32, $offset);
+        $this->volPartitionID = Buffer::readDString($bytes, 32, $offset);
 
-        $this->volPartitionLocation = Buffer::readMSB($this->bytes, 8, $offset);
-        $this->volPartitionSize = Buffer::readMSB($this->bytes, 8, $offset);
-
-        // free some space...
-        $this->bytes = null;
+        $this->volPartitionLocation = Buffer::readMSB($bytes, 8, $offset);
+        $this->volPartitionSize = Buffer::readMSB($bytes, 8, $offset);
     }
 }

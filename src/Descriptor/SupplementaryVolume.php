@@ -6,6 +6,6 @@ namespace PhpIso\Descriptor;
 
 class SupplementaryVolume extends Volume
 {
-    public string $name = 'Supplementary volume descriptor';
-    protected int $type = Type::SUPPLEMENTARY_VOLUME_DESC;
+    protected const string NAME = 'Supplementary volume descriptor';
+    protected const int TYPE = Type::SUPPLEMENTARY_VOLUME_DESC;
 }
