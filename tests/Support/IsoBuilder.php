@@ -55,6 +55,56 @@ final class IsoBuilder
         return $this->setSector(16 + $index, $data);
     }
 
+    /**
+     * A boot record volume descriptor pointing to a boot catalog
+     */
+    public function addBootRecord(int $index, int $catalogSector, string $systemId = 'EL TORITO SPECIFICATION'): self
+    {
+        $data = chr(0) . 'CD001' . chr(1) . str_pad($systemId, 32, "\0") . str_repeat("\0", 32) . pack('V', $catalogSector);
+
+        return $this->setSector(16 + $index, $data);
+    }
+
+    /**
+     * A partition volume descriptor
+     */
+    public function addPartition(int $index, string $systemId, string $partitionId, int $location, int $size): self
+    {
+        $data = chr(3) . 'CD001' . chr(1) . "\0" . str_pad($systemId, 32) . str_pad($partitionId, 32) . pack('J', $location) . pack('J', $size);
+
+        return $this->setSector(16 + $index, $data);
+    }
+
+    /**
+     * An El Torito boot catalog: validation entry, default entry and optional section entries
+     *
+     * @param array<int, string> $sections raw 32 bytes entries following the default entry
+     */
+    public static function bootCatalog(int $platform = 0, int $media = 2, int $loadRba = 25, array $sections = [], bool $validChecksum = true): string
+    {
+        $validation = chr(1) . chr($platform) . "\0\0" . str_pad('TEST', 24, "\0") . "\0\0" . "\x55\xAA";
+        if ($validChecksum) {
+            $words = unpack('v16', $validation);
+            $sum = is_array($words) ? array_sum($words) : 0;
+            $validation = substr($validation, 0, 28) . pack('v', (0x10000 - ($sum & 0xFFFF)) & 0xFFFF) . "\x55\xAA";
+        }
+
+        $default = chr(0x88) . chr($media) . pack('v', 0) . chr(6) . "\0" . pack('v', 1) . pack('V', $loadRba) . str_repeat("\0", 20);
+
+        return $validation . $default . implode('', $sections);
+    }
+
+    /**
+     * A section header (0x90 more follow, 0x91 last) followed by its boot entries
+     */
+    public static function bootSection(int $platform, int $entries, bool $last = true): string
+    {
+        $header = chr($last ? 0x91 : 0x90) . chr($platform) . pack('v', $entries) . str_repeat("\0", 28);
+        $entry = chr(0x88) . chr(0) . pack('v', 0) . chr(0xEF) . "\0" . pack('v', 4) . pack('V', 40) . str_repeat("\0", 20);
+
+        return $header . str_repeat($entry, $entries);
+    }
+
     public function addTerminator(int $index): self
     {
         return $this->setSector(16 + $index, chr(255) . 'CD001' . chr(1));

@@ -179,6 +179,46 @@ final class EntryAccessTest extends TestCase
         $this->assertSame('abcdefg', $volume->readFile($isoFile, $entry));
     }
 
+    public function testMultiExtentFollowedByAnotherNameIsStillReported(): void
+    {
+        // the second extent of BIG.BIN is missing: the dangling entry must be reported before NEXT.TXT
+        $builder = (new IsoBuilder())
+            ->addVolumeDescriptor(0)
+            ->addTerminator(1)
+            ->setDirectory(18, [
+                IsoBuilder::record("\0", 18, 2048, 2),
+                IsoBuilder::record("\1", 18, 2048, 2),
+                IsoBuilder::record('BIG.BIN', 19, 4, 0x80),
+                IsoBuilder::record('NEXT.TXT', 21, 2, 0),
+            ])
+            ->setSector(19, 'abcd')
+            ->setSector(21, 'zz');
+        $isoFile = $this->open($builder);
+
+        $paths = array_map(static fn (IsoEntry $entry): string => $entry->path, iterator_to_array($this->volume($isoFile)->walk($isoFile), false));
+
+        $this->assertSame(['/BIG.BIN', '/NEXT.TXT'], $paths);
+    }
+
+    public function testMultiExtentFileLeftOpenAtTheEndOfTheDirectoryIsReported(): void
+    {
+        $builder = (new IsoBuilder())
+            ->addVolumeDescriptor(0)
+            ->addTerminator(1)
+            ->setDirectory(18, [
+                IsoBuilder::record("\0", 18, 2048, 2),
+                IsoBuilder::record("\1", 18, 2048, 2),
+                IsoBuilder::record('OPEN.BIN', 19, 4, 0x80),
+            ])
+            ->setSector(19, 'abcd');
+        $isoFile = $this->open($builder);
+
+        $entries = iterator_to_array($this->volume($isoFile)->walk($isoFile), false);
+
+        $this->assertCount(1, $entries);
+        $this->assertSame(4, $entries[0]->size);
+    }
+
     public function testRegularEntryHasASingleExtent(): void
     {
         $isoFile = $this->sample();
