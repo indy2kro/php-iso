@@ -25,6 +25,13 @@ class IsoTool
     public const EXIT_ERROR = 3;
 
     /**
+     * @param resource|null $input stream read when the file is "-" (defaults to the standard input)
+     */
+    public function __construct(private readonly mixed $input = null)
+    {
+    }
+
+    /**
      * @param array<int, string>|null $argv defaults to the process arguments
      *
      * @return int the exit code
@@ -95,8 +102,20 @@ class IsoTool
         return self::EXIT_OK;
     }
 
+    /**
+     * "-" reads the image from the standard input
+     */
+    protected function openIso(string $file): IsoFile
+    {
+        return $file === '-' ? IsoFile::fromStream($this->input ?? STDIN) : new IsoFile($file);
+    }
+
     protected function checkIsoFile(string $file): void
     {
+        if ($file === '-') {
+            return;
+        }
+
         if (! file_exists($file)) {
             throw new Exception('ISO file does not exist.');
         }
@@ -108,7 +127,7 @@ class IsoTool
 
     protected function infoAction(string $file): void
     {
-        $isoFile = new IsoFile($file);
+        $isoFile = $this->openIso($file);
 
         echo PHP_EOL;
 
@@ -139,7 +158,7 @@ class IsoTool
 
     protected function listAction(string $file): void
     {
-        $isoFile = new IsoFile($file);
+        $isoFile = $this->openIso($file);
         $volume = $this->requireVolume($isoFile);
 
         foreach ($volume->walk($isoFile) as $entry) {
@@ -153,7 +172,7 @@ class IsoTool
 
     protected function catAction(string $file, string $path): void
     {
-        $isoFile = new IsoFile($file);
+        $isoFile = $this->openIso($file);
         $volume = $this->requireVolume($isoFile);
 
         $entry = $volume->find($isoFile, $path);
@@ -172,7 +191,7 @@ class IsoTool
 
     protected function findAction(string $file, string $pattern): void
     {
-        $isoFile = new IsoFile($file);
+        $isoFile = $this->openIso($file);
         $volume = $this->requireVolume($isoFile);
 
         foreach ($volume->search($isoFile, $pattern) as $entry) {
@@ -182,7 +201,7 @@ class IsoTool
 
     protected function jsonAction(string $file): void
     {
-        $isoFile = new IsoFile($file);
+        $isoFile = $this->openIso($file);
 
         $descriptors = [];
         foreach ($isoFile->descriptors as $descriptor) {
@@ -220,7 +239,7 @@ class IsoTool
 
     protected function extractAction(string $file, string $extractPath): void
     {
-        $isoFile = new IsoFile($file);
+        $isoFile = $this->openIso($file);
         $volume = $this->requireVolume($isoFile);
 
         echo 'Input ISO file: ' . $file . PHP_EOL;
@@ -406,7 +425,7 @@ class IsoTool
                 // a value is the next argument, unless that one is another option
                 if ($value === null) {
                     $next = $argv[$i + 1] ?? '';
-                    $value = str_starts_with($next, '-') ? '' : $next;
+                    $value = (str_starts_with($next, '-') && $next !== '-') ? '' : $next;
                     if ($value !== '') {
                         $i++;
                     }
@@ -442,7 +461,7 @@ Usage:
   isotool [options] --file=<path>
 
 Options:
-  -f, --file=<path>              Path for the ISO file (mandatory)
+  -f, --file=<path>              Path for the ISO file, "-" reads it from the standard input (mandatory)
   -l, --list                     Print only the list of files (path and size)
   -j, --json                     Print all the information as JSON
   -x, --extract=<extract_path>   Extract files in the given location
