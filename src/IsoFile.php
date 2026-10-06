@@ -13,6 +13,7 @@ use PhpIso\Descriptor\UdfDescriptor;
 use PhpIso\Descriptor\UdfTeaDescriptor;
 use PhpIso\Descriptor\Volume;
 use PhpIso\Udf\UdfFileSystem;
+use Throwable;
 
 class IsoFile
 {
@@ -27,6 +28,13 @@ class IsoFile
      * @var array<int, Descriptor>
      */
     public array $additionalDescriptors = [];
+
+    /**
+     * Largest stream accepted by fromStream() by default (4 GiB)
+     */
+    public const MAX_STREAM_BYTES = 4 * 1024 * 1024 * 1024;
+
+    private ?string $temporaryFile = null;
 
     private ?UdfFileSystem $udf = null;
 
@@ -52,6 +60,59 @@ class IsoFile
     public function __destruct()
     {
         $this->closeFile();
+
+        if ($this->temporaryFile !== null && is_file($this->temporaryFile)) {
+            unlink($this->temporaryFile);
+        }
+    }
+
+    /**
+     * Open an image coming from a stream that cannot be seeked (standard input, a pipe, a socket...)
+     *
+     * The stream is first copied to a temporary file, removed when the object is destroyed.
+     *
+     * @param resource $stream
+     * @param int $maxBytes refuse streams bigger than this
+     *
+     * @throws Exception
+     */
+    public static function fromStream(mixed $stream, int $maxBytes = self::MAX_STREAM_BYTES): self
+    {
+        $path = tempnam(sys_get_temp_dir(), 'pis');
+        if ($path === false) {
+            throw new Exception('Cannot create a temporary file');
+        }
+
+        try {
+            $output = fopen($path, 'wb');
+            if ($output === false) {
+                throw new Exception('Cannot open the temporary file for writing');
+            }
+
+            try {
+                $copied = stream_copy_to_stream($stream, $output, $maxBytes + 1);
+            } finally {
+                fclose($output);
+            }
+
+            if ($copied === false) {
+                throw new Exception('Failed to read the input stream');
+            }
+
+            if ($copied > $maxBytes) {
+                throw new Exception('The input stream is bigger than ' . $maxBytes . ' bytes');
+            }
+
+            $isoFile = new self($path);
+        } catch (Throwable $throwable) {
+            unlink($path);
+
+            throw $throwable;
+        }
+
+        $isoFile->temporaryFile = $path;
+
+        return $isoFile;
     }
 
     /**
