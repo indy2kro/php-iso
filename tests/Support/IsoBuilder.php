@@ -16,6 +16,16 @@ final class IsoBuilder
      */
     private array $sectors = [];
 
+    /**
+     * Overwrite bytes inside an existing sector
+     */
+    public function patch(int $number, int $offset, string $bytes): self
+    {
+        $sector = $this->sectors[$number] ?? str_repeat("\0", self::SECTOR);
+
+        return $this->setSector($number, substr($sector, 0, $offset) . $bytes . substr($sector, $offset + strlen($bytes)));
+    }
+
     public function setSector(int $number, string $data): self
     {
         $this->sectors[$number] = str_pad($data, self::SECTOR, "\0");

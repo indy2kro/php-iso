@@ -16,6 +16,8 @@ namespace PhpIso\Test\Support;
  *  - sparse: write blocks made only of zeros as holes
  *  - mapType: partition map type (1 is the only supported one)
  *  - loop: add an entry pointing back to its own directory to every directory
+ *  - ghosts: the root directory also lists entries pointing to an unknown partition and beyond the end of the image
+ *  - overrun: the root directory ends with an entry whose name is longer than the data
  */
 final class UdfBuilder
 {
@@ -27,12 +29,12 @@ final class UdfBuilder
     private readonly IsoBuilder $image;
 
     /**
-     * @var array{adType: int, extended: bool, inline: int, fragment: bool, maxAds: int, sparse: bool, mapType: int, loop: bool}
+     * @var array{adType: int, extended: bool, inline: int, fragment: bool, maxAds: int, sparse: bool, mapType: int, loop: bool, ghosts: bool, overrun: bool}
      */
     private readonly array $options;
 
     /**
-     * @param array{adType?: int, extended?: bool, inline?: int, fragment?: bool, maxAds?: int, sparse?: bool, mapType?: int, loop?: bool} $options
+     * @param array{adType?: int, extended?: bool, inline?: int, fragment?: bool, maxAds?: int, sparse?: bool, mapType?: int, loop?: bool, ghosts?: bool, overrun?: bool} $options
      */
     private function __construct(array $options)
     {
@@ -45,13 +47,15 @@ final class UdfBuilder
             'sparse' => $options['sparse'] ?? false,
             'mapType' => $options['mapType'] ?? 1,
             'loop' => $options['loop'] ?? false,
+            'ghosts' => $options['ghosts'] ?? false,
+            'overrun' => $options['overrun'] ?? false,
         ];
         $this->image = new IsoBuilder();
     }
 
     /**
      * @param array<array-key, mixed> $tree
-     * @param array{adType?: int, extended?: bool, inline?: int, fragment?: bool, maxAds?: int, sparse?: bool, mapType?: int, loop?: bool} $options
+     * @param array{adType?: int, extended?: bool, inline?: int, fragment?: bool, maxAds?: int, sparse?: bool, mapType?: int, loop?: bool, ghosts?: bool, overrun?: bool} $options
      */
     public static function build(array $tree, array $options = []): IsoBuilder
     {
@@ -207,6 +211,11 @@ final class UdfBuilder
             $data .= self::fileIdentifier('loop', $block, 0x02);
         }
 
+        if ($block === 1 && $this->options['ghosts']) {
+            $data .= self::fileIdentifier('ghost-partition', 5, 0x00, 7);
+            $data .= self::fileIdentifier('ghost-block', 999999, 0x00);
+        }
+
         foreach ($children as $name => $content) {
             if (! is_array($content) && ! is_string($content)) {
                 continue;
@@ -217,10 +226,15 @@ final class UdfBuilder
             $data .= self::fileIdentifier((string) $name, $childBlock, is_array($content) ? 0x02 : 0x00);
         }
 
+        if ($block === 1 && $this->options['overrun']) {
+            // claims a 200 bytes name, only a few bytes follow
+            $data .= substr(self::tag(257, 0), 0, 16) . pack('v', 1) . chr(0) . chr(200) . self::longAd(self::SECTOR, 2, 0) . pack('v', 0) . 'abc';
+        }
+
         return $data;
     }
 
-    private static function fileIdentifier(string $name, int $block, int $characteristics): string
+    private static function fileIdentifier(string $name, int $block, int $characteristics, int $partition = 0): string
     {
         $encoded = '';
         if ($name !== '') {
@@ -229,7 +243,7 @@ final class UdfBuilder
                 : chr(16) . mb_convert_encoding($name, 'UTF-16BE', 'UTF-8');
         }
 
-        $record = self::tag(257, 0) . pack('v', 1) . chr($characteristics) . chr(strlen($encoded)) . self::longAd(self::SECTOR, $block, 0) . pack('v', 0) . $encoded;
+        $record = self::tag(257, 0) . pack('v', 1) . chr($characteristics) . chr(strlen($encoded)) . self::longAd(self::SECTOR, $block, $partition) . pack('v', 0) . $encoded;
 
         return str_pad($record, (int) (ceil(strlen($record) / 4) * 4), "\0");
     }

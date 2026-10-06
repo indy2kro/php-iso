@@ -425,13 +425,8 @@ class IsoTool
 
     protected function firstString(mixed $value): string
     {
-        if (is_array($value)) {
-            $value = current($value);
-        }
-
         return is_string($value) ? $value : '';
     }
-
     protected function displayError(string $error): void
     {
         fwrite(STDERR, 'ERROR: ' . $error . PHP_EOL);
