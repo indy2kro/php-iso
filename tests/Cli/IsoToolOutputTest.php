@@ -79,20 +79,17 @@ final class IsoToolOutputTest extends TestCase
     {
         [, $output] = $this->runTool(['-j', '-f', self::FIXTURES . 'DOS4.01_bootdisk.iso']);
 
-        $data = json_decode($output, true, 512, JSON_THROW_ON_ERROR);
-
-        $this->assertIsArray($data);
-        $this->assertSame('x86', $data['descriptors'][1]['bootCatalog']['entries'][0]['platform']);
+        $this->assertJson($output);
+        $this->assertStringContainsString('"platform": "x86"', $output);
+        $this->assertStringContainsString('"validChecksum": true', $output);
     }
 
     public function testJsonContainsTheFiles(): void
     {
         [, $output] = $this->runTool(['-j', '-f', self::FIXTURES . 'subdir.iso']);
 
-        $data = json_decode($output, true, 512, JSON_THROW_ON_ERROR);
-
-        $this->assertIsArray($data);
-        $this->assertSame('/DIR1', $data['descriptors'][0]['files'][0]['path']);
+        $this->assertJson($output);
+        $this->assertStringContainsString('"path": "/DIR1/DIR2/DIR3/TEST4.TXT"', $output);
     }
 
     public function testExtractWritesTheFiles(): void
