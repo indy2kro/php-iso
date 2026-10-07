@@ -201,7 +201,7 @@ for manifest in fixtures/manifests/*.sha256; do
     [ "$volume" != "default" ] && options=(--volume="$volume")
 
     rm -rf "$WORK/m"
-    if ! run "$WORK/out" "$WORK/err" -f "fixtures/$image.iso" "${options[@]}" -x "$WORK/m"; then
+    if ! run "$WORK/out" "$WORK/err" -f "fixtures/$image.iso" ${options[@]+"${options[@]}"} -x "$WORK/m"; then
         fail "$base: extraction failed ($(head -1 "$WORK/err"))"
         continue
     fi
