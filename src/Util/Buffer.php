@@ -38,19 +38,38 @@ class Buffer
             }
         }
 
-        // some writers store plain ASCII in Joliet strings: genuine UTF-16BE text always contains NUL high bytes
-        if ($supplementary && $asciiFallback && $string !== '' && preg_match('/^[\x20-\x7e]+$/', $string) === 1) {
+        // some writers store plain ASCII in Joliet strings. Only fall back when the data is clearly not UTF-16BE:
+        // no NUL byte at all (genuine UTF-16BE of Latin text and its 0x00 0x20 padding always has some) and
+        // either an odd length, ASCII space padding, or a UTF-16 decoding that gives unusable characters
+        if ($supplementary && $asciiFallback && self::looksLikeAscii($string)) {
             $supplementary = false;
         }
 
         if ($supplementary) {
-            $string = mb_convert_encoding($string, 'UTF-8', 'UTF-16');
+            $string = mb_convert_encoding($string, 'UTF-8', 'UTF-16BE');
         }
 
         $offset += $length;
         return $string;
     }
 
+    /**
+     * Whether a raw Joliet string is plain ASCII written by a broken writer instead of UTF-16BE text
+     */
+    private static function looksLikeAscii(string $string): bool
+    {
+        if ($string === '' || preg_match('/^[\x20-\x7e]+$/', $string) !== 1) {
+            return false;
+        }
+
+        if (strlen($string) % 2 === 1 || str_ends_with($string, '  ')) {
+            return true;
+        }
+
+        $decoded = mb_convert_encoding($string, 'UTF-8', 'UTF-16BE');
+
+        return preg_match('/[\p{C}]/u', $decoded) === 1 || str_contains($decoded, '?');
+    }
     /**
      * Read an a-string from the buffer
      *
@@ -104,7 +123,7 @@ class Buffer
             if (! isset($buffer[$i])) {
                 throw new Exception('Failed to read buffer entry ' . $i);
             }
-            $datas .= $buffer[$i];
+            $datas .= chr($buffer[$i]);
         }
 
         $offset += $length;

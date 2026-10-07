@@ -59,7 +59,7 @@ final class BufferTest extends TestCase
         $buffer = [1, 2, 3, 4, 5];
         $offset = 0;
         $result = Buffer::getBytes($buffer, 3, $offset);
-        $this->assertSame('123', $result);
+        $this->assertSame("\x01\x02\x03", $result);
         $this->assertSame(3, $offset);
     }
 
@@ -69,6 +69,31 @@ final class BufferTest extends TestCase
         $buffer = [1, 2];
         $offset = 0;
         Buffer::getBytes($buffer, 3, $offset);
+    }
+
+    public function testGetBytesReturnsRawBytes(): void
+    {
+        $buffer = [0, 255, 65];
+        $offset = 0;
+
+        $this->assertSame("\x00\xFFA", Buffer::getBytes($buffer, 3, $offset));
+    }
+
+    public function testCjkJolietStringWithUtf16PaddingIsNotTreatedAsAscii(): void
+    {
+        // 0x672C 0x4E2D: every byte is printable ASCII but the text is UTF-16BE
+        $buffer = array_map(ord(...), str_split("\x67\x2C\x4E\x2D\x00\x20\x00\x20"));
+        $offset = 0;
+
+        $this->assertSame("\u{672C}\u{4E2D}  ", Buffer::readAString($buffer, 8, $offset, true, true));
+    }
+
+    public function testJolietStringPaddedWithAsciiSpacesFallsBackToAscii(): void
+    {
+        $buffer = array_map(ord(...), str_split('WinISO!  '));
+        $offset = 0;
+
+        $this->assertSame('WinISO!  ', Buffer::readAString($buffer, 9, $offset, true, true));
     }
 
     public function testReadBBOException(): void

@@ -200,7 +200,7 @@ final class HostileIsoTest extends TestCase
         $isoFile = $this->open($builder);
 
         $this->assertCount(1, $isoFile->additionalDescriptors);
-        $this->assertInstanceOf(\PhpIso\Descriptor\SupplementaryVolume::class, $isoFile->getSupplementaryVolume());
+        $this->assertInstanceOf(\PhpIso\Descriptor\SupplementaryVolume::class, $isoFile->descriptors[2]);
     }
 
     public function testReadIsCappedForHugeLengths(): void

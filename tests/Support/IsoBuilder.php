@@ -80,7 +80,7 @@ final class IsoBuilder
      */
     public function addPartition(int $index, string $systemId, string $partitionId, int $location, int $size): self
     {
-        $data = chr(3) . 'CD001' . chr(1) . "\0" . str_pad($systemId, 32) . str_pad($partitionId, 32) . pack('J', $location) . pack('J', $size);
+        $data = chr(3) . 'CD001' . chr(1) . "\0" . str_pad($systemId, 32) . str_pad($partitionId, 32) . self::bbo32($location) . self::bbo32($size);
 
         return $this->setSector(16 + $index, $data);
     }

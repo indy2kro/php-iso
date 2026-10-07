@@ -65,14 +65,14 @@ final class DescriptorsTest extends TestCase
 
     public function testPartitionDescriptorIsRead(): void
     {
-        $isoFile = $this->open((new IsoBuilder())->addVolumeDescriptor(0)->addPartition(1, 'SYS', 'PART1', 100, 200)->addTerminator(2));
+        $isoFile = $this->open((new IsoBuilder())->addVolumeDescriptor(0)->addPartition(1, 'SYS', 'PART1', 100000, 300)->addTerminator(2));
 
         $partition = $isoFile->descriptors[Type::PARTITION_VOLUME_DESC];
 
         $this->assertInstanceOf(Partition::class, $partition);
         $this->assertSame('PART1', trim($partition->volPartitionID));
-        $this->assertSame(100, $partition->volPartitionLocation);
-        $this->assertSame(200, $partition->volPartitionSize);
+        $this->assertSame(100000, $partition->volPartitionLocation);
+        $this->assertSame(300, $partition->volPartitionSize);
     }
 
     public function testTruncatedVolumeDescriptorIsRejected(): void
