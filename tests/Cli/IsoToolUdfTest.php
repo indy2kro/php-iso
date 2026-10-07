@@ -47,7 +47,7 @@ final class IsoToolUdfTest extends TestCase
 
     public function testInfoListsTheUdfFiles(): void
     {
-        [$code, $output] = $this->runTool(['-f', $this->image()]);
+        [$code, $output] = $this->runTool(['--files', '-f', $this->image()]);
 
         $this->assertSame(IsoTool::EXIT_OK, $code);
         $this->assertStringContainsString('UDF file system', $output);

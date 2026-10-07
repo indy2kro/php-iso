@@ -39,11 +39,11 @@ final class IsoToolTest extends TestCase
         $this->assertSame(IsoTool::EXIT_USAGE, $code);
     }
 
-    public function testMissingFileIsInvalidFile(): void
+    public function testMissingFileIsUsageError(): void
     {
         [$code] = $this->runTool(['-l']);
 
-        $this->assertSame(IsoTool::EXIT_INVALID_FILE, $code);
+        $this->assertSame(IsoTool::EXIT_USAGE, $code);
     }
 
     public function testExtractWithoutDestinationIsUsageError(): void
