@@ -55,7 +55,12 @@ abstract class Volume extends Descriptor implements FileSystem
     {
         parent::__construct($stdId, $version);
 
-        $supplementary = (static::TYPE === Type::SUPPLEMENTARY_VOLUME_DESC);
+        // only Joliet volumes use UCS-2 strings: enhanced volume descriptors and plain supplementary ones are 8 bit.
+        // The escape sequences come after the names, so they are peeked at their fixed place first
+        // (1 unused byte, 32 system id, 32 volume id, 8 unused, 8 space size)
+        $escapeOffset = $offset + 1 + 32 + 32 + 8 + 8;
+        $supplementary = static::TYPE === Type::SUPPLEMENTARY_VOLUME_DESC
+            && self::detectJolietLevel(array_slice($bytes, $escapeOffset - 1, 3)) > 0;
 
         // unused first entry
         Buffer::getRawBytes($bytes, 1, $offset);
@@ -72,22 +77,7 @@ abstract class Volume extends Descriptor implements FileSystem
         $jolietEscapeSequence = Buffer::getRawBytes($bytes, 32, $offset);
 
         // Joliet Detection - If this is a Supplementary Volume Descriptor
-        $jolietLevel = 0;
-        if (static::TYPE === Type::SUPPLEMENTARY_VOLUME_DESC) {
-            // Joliet escape sequences: %/@ (level 1), %/C (level 2), %/E (level 3)
-            $jolietLevels = [
-                1 => [0x25, 0x2F, 0x40],
-                2 => [0x25, 0x2F, 0x43],
-                3 => [0x25, 0x2F, 0x45],
-            ];
-
-            foreach ($jolietLevels as $level => $sequence) {
-                if (array_slice($jolietEscapeSequence, 0, 3) === $sequence) {
-                    $jolietLevel = $level;
-                    break;
-                }
-            }
-        }
+        $jolietLevel = static::TYPE === Type::SUPPLEMENTARY_VOLUME_DESC ? self::detectJolietLevel($jolietEscapeSequence) : 0;
 
         $this->jolietLevel = $jolietLevel;
 
@@ -126,6 +116,29 @@ abstract class Volume extends Descriptor implements FileSystem
     }
 
     /**
+     * Joliet level (1 to 3) announced by an escape sequence, 0 when it is not a Joliet one
+     *
+     * @param array<int, int> $escapeSequence at least the first 3 bytes of the escape sequences field
+     */
+    private static function detectJolietLevel(array $escapeSequence): int
+    {
+        // Joliet escape sequences: %/@ (level 1), %/C (level 2), %/E (level 3)
+        $jolietLevels = [
+            1 => [0x25, 0x2F, 0x40],
+            2 => [0x25, 0x2F, 0x43],
+            3 => [0x25, 0x2F, 0x45],
+        ];
+
+        foreach ($jolietLevels as $level => $sequence) {
+            if (array_slice($escapeSequence, 0, 3) === $sequence) {
+                return $level;
+            }
+        }
+
+        return 0;
+    }
+
+    /**
      * Walk the whole directory tree of the volume (depth first), without needing the path table
      *
      * Entries are untrusted: names are not sanitized here, see Util\SafePath before using them on disk.
@@ -141,7 +154,7 @@ abstract class Volume extends Descriptor implements FileSystem
             return;
         }
 
-        $supplementary = (static::TYPE === Type::SUPPLEMENTARY_VOLUME_DESC);
+        $supplementary = $this->jolietLevel > 0;
         $visited = [$this->rootDirectory->location => true];
 
         // explicit stack instead of recursion: a hostile image cannot exhaust the PHP stack
@@ -343,7 +356,7 @@ abstract class Volume extends Descriptor implements FileSystem
 
         $offset = 1;
         $dirNum = 1;
-        $supplementary = (static::TYPE === Type::SUPPLEMENTARY_VOLUME_DESC);
+        $supplementary = $this->jolietLevel > 0;
         while (($ptRec = PathTableRecord::read($bytes, $offset, $dirNum, $supplementary, $littleEndian)) instanceof PathTableRecord) {
             $pathTable[$dirNum] = $ptRec;
             $dirNum++;

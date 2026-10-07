@@ -10,16 +10,24 @@ use PhpIso\Util\Buffer;
 
 class Reader
 {
-    public function __construct(protected IsoFile $isoFile)
+    /**
+     * @param int $sector number of the sector the next read() starts at (only used in error messages)
+     */
+    public function __construct(protected IsoFile $isoFile, protected int $sector = 16)
     {
     }
 
     public function read(): ?Descriptor
     {
         $string = $this->isoFile->read(2048);
+        $sector = $this->sector++;
 
         if ($string === false) {
             return null;
+        }
+
+        if (strlen($string) < 2048) {
+            throw new Exception('Truncated or invalid ISO image: volume descriptor at sector ' . $sector . ' is incomplete');
         }
 
         /** @var array<int, int>|false $bytes */
@@ -45,6 +53,11 @@ class Reader
 
         $version = $bytes[$offset];
         $offset++;
+
+        $iso9660Types = [Type::PRIMARY_VOLUME_DESC, Type::SUPPLEMENTARY_VOLUME_DESC, Type::PARTITION_VOLUME_DESC, Type::TERMINATOR_DESC];
+        if (in_array($type, $iso9660Types, true) && $stdId !== 'CD001') {
+            throw new Exception('Not an ISO 9660 volume descriptor');
+        }
 
         // Check for UDF-specific descriptors
         if ($type === Type::BOOT_RECORD_DESC) {
