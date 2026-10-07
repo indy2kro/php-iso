@@ -49,8 +49,12 @@ final class ListDirectoryTest extends TestCase
      */
     public static function fixtures(): Iterator
     {
-        foreach (['subdir.iso', 'test-dir.iso', 'test.iso', 'iso9660_udf.iso', 'udf.iso', 'DOS4.01_bootdisk.iso'] as $name) {
+        foreach (['subdir.iso', 'test-dir.iso', 'test.iso', 'iso9660_udf.iso', 'udf.iso', 'DOS4.01_bootdisk.iso', 'rockridge.iso', 'joliet_cjk.iso'] as $name) {
             yield $name . ' primary' => [$name, false];
+        }
+
+        // only the images that have a UDF file system
+        foreach (['test.iso', 'iso9660_udf.iso', 'udf.iso', 'iso9660_udf_hfs.iso'] as $name) {
             yield $name . ' udf' => [$name, true];
         }
     }
@@ -60,9 +64,7 @@ final class ListDirectoryTest extends TestCase
     {
         $isoFile = new IsoFile(dirname(__DIR__) . '/fixtures/' . $name);
         $fs = $udf ? $isoFile->getUdfFileSystem() : $isoFile->getFileSystem();
-        if ($fs === null) {
-            $this->markTestSkipped('no such file system in ' . $name);
-        }
+        $this->assertInstanceOf(FileSystem::class, $fs);
 
         $walked = [];
         foreach ($fs->walk($isoFile) as $entry) {
