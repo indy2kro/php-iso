@@ -205,11 +205,7 @@ final class RockRidge
             }
 
             $index = 1;
-            try {
-                $times[$bit] = $long ? IsoDate::init17($buffer, $index) : IsoDate::init7($buffer, $index);
-            } catch (Exception) {
-                $times[$bit] = null;
-            }
+            $times[$bit] = $long ? IsoDate::init17($buffer, $index) : IsoDate::init7($buffer, $index);
         }
 
         return $times;
