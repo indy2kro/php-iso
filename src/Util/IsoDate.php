@@ -47,20 +47,28 @@ class IsoDate
 
         $offset += 1;
 
-        $year = (int) substr($date, 0, 4);
-        $month = (int) substr($date, 4, 2);
-        $day = (int) substr($date, 6, 2);
+        $year = self::digits($date, 0, 4);
+        $month = self::digits($date, 4, 2);
+        $day = self::digits($date, 6, 2);
 
         if ($year === 0 || $month === 0 || $day === 0) {
             return null;
         }
 
-        $hour = (int) substr($date, 8, 2);
-        $min = (int) substr($date, 10, 2);
-        $sec = (int) substr($date, 12, 2);
-        $hundredths = (int) substr($date, 14, 2);
+        $hour = self::digits($date, 8, 2);
+        $min = self::digits($date, 10, 2);
+        $sec = self::digits($date, 12, 2);
+        $hundredths = self::digits($date, 14, 2);
 
         return self::create($year, $month, $day, $hour, $min, $sec, $utcOffset)?->addMilliseconds($hundredths * 10);
+    }
+
+    /**
+     * The leading decimal digits of a field of a "17 bytes" date, 0 when there are none ("2e4" is not a number here)
+     */
+    private static function digits(string $date, int $start, int $length): int
+    {
+        return preg_match('/^\s*(\d+)/', substr($date, $start, $length), $matches) === 1 ? (int) $matches[1] : 0;
     }
 
     /**
