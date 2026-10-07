@@ -6,7 +6,7 @@ PHP Library used to read metadata and extract information from ISO files based o
 
 This library follows the [ISO 9660 / ECMA-119](https://www.ecma-international.org/wp-content/uploads/ECMA-119_4th_edition_june_2019.pdf) standard.
 
-See [CHANGELOG.md](CHANGELOG.md) for the release notes, [UPGRADE-2.0.md](UPGRADE-2.0.md) when moving from 1.x and [SECURITY.md](SECURITY.md) to report a vulnerability (the library parses untrusted images).
+See [CHANGELOG.md](CHANGELOG.md) for the release notes, [UPGRADE-2.0.md](UPGRADE-2.0.md) when moving from 1.x, [UPGRADE-2.1.md](UPGRADE-2.1.md) when moving from 2.0 and [SECURITY.md](SECURITY.md) to report a vulnerability (the library parses untrusted images).
 
 Basic concepts
 -----
