@@ -37,8 +37,9 @@ class IsoTool
 
     /**
      * @param resource|null $input stream read when the file is "-" (defaults to the standard input)
+     * @param resource|null $errorOutput stream receiving the errors and warnings (defaults to the standard error)
      */
-    public function __construct(private readonly mixed $input = null)
+    public function __construct(private readonly mixed $input = null, private readonly mixed $errorOutput = null)
     {
     }
 
@@ -588,7 +589,7 @@ class IsoTool
 
     protected function writeError(string $line): void
     {
-        fwrite(STDERR, $line . PHP_EOL);
+        fwrite($this->errorOutput ?? STDERR, $line . PHP_EOL);
     }
 
     /**

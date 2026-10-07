@@ -8,7 +8,7 @@ Changes marked **BREAKING** are described with before / after snippets in [UPGRA
 
 ## [Unreleased]
 
-Planned as 2.0.0.
+## [2.0.0] - 2026-10-07
 
 ### Added
 
@@ -24,9 +24,9 @@ Planned as 2.0.0.
 - `Extractor` with restored modification times, `preserveMode` (Rock Ridge permissions) and `continueOnError` with `getErrors()`; symbolic links are never created
 - `Util\SafePath` to validate untrusted names
 - `WalkWarnings` collector reporting incomplete listings (depth limit, oversized, unreadable or corrupt directories, skipped UDF entries), with a strict mode that throws
-- CLI: `--cat`, `--find`, `--list`, `--json`, `--ndjson`, `--extract-boot`, `--files`, `--volume=primary|joliet|udf`, `--no-rock-ridge`, `--strict` (`WARNING:` lines on the standard error otherwise), `-f -` (standard input), bundled short flags (`-lj`), documented exit codes, errors on the standard error; `IsoTool::run()` returns the exit code
+- CLI: `--cat`, `--find`, `--list`, `--json`, `--ndjson`, `--extract-boot`, `--files`, `--volume=primary|joliet|udf`, `--no-rock-ridge`, `--strict` (`WARNING:` lines on the standard error otherwise), `-f -` (standard input), bundled short flags (`-lj`), documented exit codes, errors on the standard error; `IsoTool::run()` returns the exit code and `IsoTool` accepts the streams used for the standard input and the error output
 - `CHANGELOG.md`, `UPGRADE-2.0.md`, a rewritten `SECURITY.md` (private vulnerability reporting), generated real-world fixtures (`fixtures/build-fixtures.sh`), `composer run check` and the other composer scripts
-- CI: Windows job, tests with the lowest dependencies, `composer audit`, coverage gates
+- CI: tests on Linux, Windows and macOS with PHP 8.3 to 8.5, tests with the lowest dependencies, `composer audit`, coverage gates
 
 ### Changed
 
@@ -75,5 +75,6 @@ Planned as 2.0.0.
 
 See the [GitHub release](https://github.com/indy2kro/php-iso/releases/tag/1.1.0).
 
-[Unreleased]: https://github.com/indy2kro/php-iso/compare/1.1.0...HEAD
+[Unreleased]: https://github.com/indy2kro/php-iso/compare/2.0.0...HEAD
+[2.0.0]: https://github.com/indy2kro/php-iso/compare/1.1.0...2.0.0
 [1.1.0]: https://github.com/indy2kro/php-iso/releases/tag/1.1.0

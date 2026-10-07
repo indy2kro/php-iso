@@ -12,17 +12,26 @@ permissions:
   contents: read
 
 jobs:
-  php-version:
+  tests:
+    name: Tests (${{ matrix.os }}, PHP ${{ matrix.php-version }})
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
 
     strategy:
       fail-fast: false
       matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
         php-version:
           - "8.3"
           - "8.4"
           - "8.5"
+
+    defaults:
+      run:
+        shell: bash
 
     steps:
 
@@ -33,7 +42,7 @@ jobs:
           uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
           with:
             php-version: "${{ matrix.php-version }}"
-            coverage: "pcov"
+            coverage: "${{ matrix.os == 'ubuntu-latest' && 'pcov' || 'none' }}"
 
         - name: Get Composer Cache Directory 2
           id: composer-cache
@@ -63,26 +72,46 @@ jobs:
         - name: Update Dependencies with latest stable
           run: composer update --no-progress
 
+        # the static checks do not depend on the operating system: run them once per PHP version, on Linux
         - name: Validate composer.json
+          if: matrix.os == 'ubuntu-latest'
           run: composer validate --strict
 
         - name: Audit dependencies
+          if: matrix.os == 'ubuntu-latest'
           run: composer audit
 
         - name: Code style test
+          if: matrix.os == 'ubuntu-latest'
           run: vendor/bin/phpcs
 
         - name: PHPStan code analysis
+          if: matrix.os == 'ubuntu-latest'
           run: php vendor/bin/phpstan analyze --memory-limit=1G
 
         - name: Execute Rector
+          if: matrix.os == 'ubuntu-latest'
           run: vendor/bin/rector --dry-run
 
-        - name: Run tests
+        - name: Run tests with coverage
+          if: matrix.os == 'ubuntu-latest'
           run: vendor/bin/phpunit --coverage-clover=coverage.xml --log-junit=junit.xml
 
+        - name: Run tests
+          if: matrix.os != 'ubuntu-latest'
+          run: vendor/bin/phpunit --no-coverage
+
+        - name: Smoke test the CLI
+          if: matrix.os != 'windows-latest'
+          run: php bin/isotool -f fixtures/test.iso -l
+
+        - name: Smoke test the CLI (Windows batch file)
+          if: matrix.os == 'windows-latest'
+          shell: cmd
+          run: bin\isotool.bat -f fixtures/test.iso -l
+
         - name: Upload test results to Codecov
-          if: ${{ !cancelled() }}
+          if: ${{ !cancelled() && matrix.os == 'ubuntu-latest' }}
           uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
           with:
             token: ${{ secrets.CODECOV_TOKEN }}
@@ -90,6 +119,7 @@ jobs:
             files: junit.xml
 
         - name: Send code coverage report to Codecov.io
+          if: matrix.os == 'ubuntu-latest'
           uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
           with:
             token: ${{ secrets.CODECOV_TOKEN }}
@@ -114,29 +144,3 @@ jobs:
 
       - name: Run tests
         run: vendor/bin/phpunit --no-coverage
-
-  windows:
-    name: Tests on Windows
-
-    runs-on: windows-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Install PHP
-        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
-        with:
-          php-version: "8.3"
-
-      - name: Install dependencies
-        shell: bash
-        run: composer install --no-progress
-
-      - name: Run tests
-        shell: bash
-        run: vendor/bin/phpunit --no-coverage
-
-      - name: Smoke test the CLI
-        shell: cmd
-        run: bin\isotool.bat -f fixtures/test.iso -l

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PhpIso\Test\Cli;
 
 use PhpIso\Cli\IsoTool;
+use PhpIso\Test\Support\Streams;
 use PhpIso\Test\Support\IsoBuilder;
 use PHPUnit\Framework\TestCase;
 
@@ -34,7 +35,7 @@ final class IsoToolBootTest extends TestCase
     private function runTool(array $args): array
     {
         ob_start();
-        $code = (new IsoTool())->run($args);
+        $code = (new IsoTool(errorOutput: Streams::memory()))->run($args);
 
         return [$code, (string) ob_get_clean()];
     }
