@@ -132,7 +132,7 @@ final class UdfHostileTest extends TestCase
     public function testUnsupportedBlockSizeIsReported(): void
     {
         $builder = UdfBuilder::build(['a' => 'a']);
-        $logical = str_pad(pack('vvCCvvvV', 6, 3, 0, 0, 1, 0, 0, 34), 212, "\0") . pack('V', 4096);
+        $logical = str_pad(UdfBuilder::tag(6, 34), 212, "\0") . pack('V', 4096);
         $builder->setSector(34, $logical)->setSector(50, $logical);
 
         $this->expectException(Exception::class);
