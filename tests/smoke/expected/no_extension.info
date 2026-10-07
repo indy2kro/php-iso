@@ -1,0 +1,29 @@
+Input ISO file: fixtures/no_extension.iso
+
+Number of descriptors: 2
+  - Primary volume descriptor
+   - System ID: LINUX
+   - Volume ID: NOEXT
+   - App ID: GENISOIMAGE ISO 9660/HFS FILESYSTEM CREATOR (C) 1993 E.YOUNGDALE (C) 1997-2006 J.PEARSON/J.SCHILLING (C) 2006-2007 CDRKIT TEAM
+   - File Structure Version: 1
+   - Volume Space Size: 177
+   - Volume Set Size: 1
+   - Volume SeqNum: 1
+   - Block size: 2048
+   - Volume Set ID: 
+   - Publisher ID: 
+   - Preparer ID: 
+   - Copyright File ID: 
+   - Abstract File ID: 
+   - Bibliographic File ID: 
+   - Creation Date: 2026-10-07 17:55:40
+   - Modification Date: 2026-10-07 17:55:40
+   - Expiration Date: 
+   - Effective Date: 2026-10-07 17:55:40
+   - Files:
+/DATA.TXT (location: 24) (length: 5)
+/LICENSE (location: 25) (length: 13)
+/README (location: 26) (length: 7)
+
+  - Terminator descriptor
+

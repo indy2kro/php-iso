@@ -1,0 +1,73 @@
+Input ISO file: fixtures/udf_bridge.iso
+
+Number of descriptors: 6
+  - Primary volume descriptor
+   - System ID: LINUX
+   - Volume ID: BRIDGE
+   - App ID: GENISOIMAGE ISO 9660/HFS FILESYSTEM CREATOR (C) 1993 E.YOUNGDALE (C) 1997-2006 J.PEARSON/J.SCHILLING (C) 2006-2007 CDRKIT TEAM
+   - File Structure Version: 1
+   - Volume Space Size: 439
+   - Volume Set Size: 1
+   - Volume SeqNum: 1
+   - Block size: 2048
+   - Volume Set ID: 
+   - Publisher ID: 
+   - Preparer ID: 
+   - Copyright File ID: 
+   - Abstract File ID: 
+   - Bibliographic File ID: 
+   - Creation Date: 2026-10-07 19:05:23
+   - Modification Date: 2026-10-07 19:05:23
+   - Expiration Date: 
+   - Effective Date: 2026-10-07 19:05:23
+   - Files:
+/docs/
+/readme.txt (location: 283) (length: 14)
+/docs/data.bin (location: 284) (length: 5000)
+/docs/sub/
+/docs/sub/doc.txt (location: 287) (length: 11)
+
+  - Supplementary volume descriptor
+   - System ID: LINUX
+   - Volume ID: BRIDGE
+   - App ID: GENISOIMAGE ISO 9660_HFS FILESYSTEM CREATOR (C) 1993 E.YOUNGDALE
+   - File Structure Version: 1
+   - Volume Space Size: 439
+   - Volume Set Size: 1
+   - Volume SeqNum: 1
+   - Block size: 2048
+   - Volume Set ID: 
+   - Publisher ID: 
+   - Preparer ID: 
+   - Copyright File ID: ?
+   - Abstract File ID: ?
+   - Bibliographic File ID: ?
+   - Creation Date: 2026-10-07 19:05:23
+   - Modification Date: 2026-10-07 19:05:23
+   - Expiration Date: 
+   - Effective Date: 2026-10-07 19:05:23
+   - Joliet Level: 3
+   - Files:
+/docs/
+/readme.txt (location: 283) (length: 14)
+/docs/data.bin (location: 284) (length: 5000)
+/docs/sub/
+/docs/sub/doc.txt (location: 287) (length: 11)
+
+  - Terminator descriptor
+
+  - UDF BEA01 descriptor
+
+  - UDF NSR02 descriptor
+
+  - UDF TEA descriptor
+
+  - UDF file system
+   - Volume ID: BRIDGE
+   - Files:
+/docs/
+/readme.txt (location: 579584) (length: 14)
+/docs/data.bin (location: 581632) (length: 5000)
+/docs/sub/
+/docs/sub/doc.txt (location: 587776) (length: 11)
+

@@ -1,0 +1,5 @@
+/boot/
+/readme.txt	9
+/boot/bios.bin	8192
+/boot/boot.cat	2048
+/boot/efi.img	16384

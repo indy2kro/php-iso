@@ -1,0 +1,32 @@
+Input ISO file: fixtures/test-dir.iso
+
+Number of descriptors: 2
+  - Primary volume descriptor
+   - System ID: LINUX
+   - Volume ID: CDROM
+   - App ID: GENISOIMAGE ISO 9660/HFS FILESYSTEM CREATOR (C) 1993 E.YOUNGDALE (C) 1997-2006 J.PEARSON/J.SCHILLING (C) 2006-2007 CDRKIT TEAM
+   - File Structure Version: 1
+   - Volume Space Size: 198
+   - Volume Set Size: 1
+   - Volume SeqNum: 1
+   - Block size: 2048
+   - Volume Set ID: 
+   - Publisher ID: 
+   - Preparer ID: 
+   - Copyright File ID: 
+   - Abstract File ID: 
+   - Bibliographic File ID: 
+   - Creation Date: 2025-01-15 09:41:36
+   - Modification Date: 2025-01-15 09:41:36
+   - Expiration Date: 
+   - Effective Date: 2025-01-15 09:41:36
+   - Files:
+/CONTRIBU.MD (location: 25) (length: 2983)
+/LICENSE (location: 27) (length: 35149)
+/SUB_DIR/
+/TEST_FIL.TXT (location: 45) (length: 10)
+/SUB_DIR/TEST_000.TXT (location: 46) (length: 10)
+/SUB_DIR/TEST_FIL.TXT (location: 47) (length: 10)
+
+  - Terminator descriptor
+

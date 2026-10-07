@@ -1,0 +1,64 @@
+Input ISO file: fixtures/iso9660_udf_hfs.iso
+
+Number of descriptors: 6
+  - Primary volume descriptor
+   - System ID: LINUX
+   - Volume ID: UDF Bridge
+   - App ID: GENISOIMAGE ISO 9660/HFS FILESYSTEM CREATOR (C) 1993 E.YOUNGDALE (C) 1997-2006 J.PEARSON/J.SCHILLING (C) 2006-2007 CDRKIT TEAM
+   - File Structure Version: 1
+   - Volume Space Size: 592
+   - Volume Set Size: 1
+   - Volume SeqNum: 1
+   - Block size: 2048
+   - Volume Set ID: 
+   - Publisher ID: 
+   - Preparer ID: 
+   - Copyright File ID: 
+   - Abstract File ID: 
+   - Bibliographic File ID: 
+   - Creation Date: 2022-04-07 20:31:13
+   - Modification Date: 2022-04-07 20:31:13
+   - Expiration Date: 
+   - Effective Date: 2022-04-07 20:31:13
+   - Files:
+/nimbie.jpg (location: 274) (length: 69424)
+/readme.txt (location: 308) (length: 37)
+
+  - Supplementary volume descriptor
+   - System ID: LINUX
+   - Volume ID: UDF Bridge
+   - App ID: GENISOIMAGE ISO 9660_HFS FILESYSTEM CREATOR (C) 1993 E.YOUNGDALE
+   - File Structure Version: 1
+   - Volume Space Size: 592
+   - Volume Set Size: 1
+   - Volume SeqNum: 1
+   - Block size: 2048
+   - Volume Set ID: 
+   - Publisher ID: 
+   - Preparer ID: 
+   - Copyright File ID: ?
+   - Abstract File ID: ?
+   - Bibliographic File ID: ?
+   - Creation Date: 2022-04-07 20:31:13
+   - Modification Date: 2022-04-07 20:31:13
+   - Expiration Date: 
+   - Effective Date: 2022-04-07 20:31:13
+   - Joliet Level: 3
+   - Files:
+/nimbie.jpg (location: 274) (length: 69424)
+/readme.txt (location: 308) (length: 37)
+
+  - Terminator descriptor
+
+  - UDF BEA01 descriptor
+
+  - UDF NSR02 descriptor
+
+  - UDF TEA descriptor
+
+  - UDF file system
+   - Volume ID: UDF Bridge
+   - Files:
+/nimbie.jpg (location: 561152) (length: 69424)
+/readme.txt (location: 630784) (length: 37)
+

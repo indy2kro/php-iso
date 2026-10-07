@@ -1,0 +1,157 @@
+{
+    "file": "fixtures/joliet_cjk.iso",
+    "descriptors": [
+        {
+            "type": 1,
+            "name": "Primary volume descriptor",
+            "systemId": "LINUX",
+            "volumeId": "ボリューム中文",
+            "appId": "GENISOIMAGE ISO 9660/HFS FILESYSTEM CREATOR (C) 1993 E.YOUNGDALE (C) 1997-2006 J.PEARSON/J.SCHILLING (C) 2006-2007 CDRKIT TEAM",
+            "publisherId": "",
+            "preparerId": "",
+            "volumeSpaceSize": 185,
+            "blockSize": 2048,
+            "jolietLevel": 0,
+            "creationDate": "2026-10-07T17:55:40+00:00",
+            "modificationDate": "2026-10-07T17:55:40+00:00",
+            "expirationDate": null,
+            "effectiveDate": "2026-10-07T17:55:40+00:00",
+            "files": [
+                {
+                    "path": "/_____000.TXT",
+                    "name": "_____000.TXT",
+                    "type": "file",
+                    "size": 8,
+                    "location": 32,
+                    "date": "2026-10-07T17:55:40+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                },
+                {
+                    "path": "/________",
+                    "name": "________",
+                    "type": "directory",
+                    "size": 2048,
+                    "location": 29,
+                    "date": "2026-10-07T17:55:40+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                },
+                {
+                    "path": "/________.TXT",
+                    "name": "________.TXT",
+                    "type": "file",
+                    "size": 9,
+                    "location": 33,
+                    "date": "2026-10-07T17:55:40+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                },
+                {
+                    "path": "/________/________.TXT",
+                    "name": "________.TXT",
+                    "type": "file",
+                    "size": 7,
+                    "location": 34,
+                    "date": "2026-10-07T17:55:40+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                }
+            ]
+        },
+        {
+            "type": 2,
+            "name": "Supplementary volume descriptor",
+            "systemId": "LINUX",
+            "volumeId": "ボリューム中文",
+            "appId": "GENISOIMAGE ISO 9660_HFS FILESYSTEM CREATOR (C) 1993 E.YOUNGDALE",
+            "publisherId": "",
+            "preparerId": "",
+            "volumeSpaceSize": 185,
+            "blockSize": 2048,
+            "jolietLevel": 3,
+            "creationDate": "2026-10-07T17:55:40+00:00",
+            "modificationDate": "2026-10-07T17:55:40+00:00",
+            "expirationDate": null,
+            "effectiveDate": "2026-10-07T17:55:40+00:00",
+            "files": [
+                {
+                    "path": "/ディレクトリ",
+                    "name": "ディレクトリ",
+                    "type": "directory",
+                    "size": 2048,
+                    "location": 31,
+                    "date": "2026-10-07T17:55:40+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                },
+                {
+                    "path": "/中文文件.txt",
+                    "name": "中文文件.txt",
+                    "type": "file",
+                    "size": 8,
+                    "location": 32,
+                    "date": "2026-10-07T17:55:40+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                },
+                {
+                    "path": "/日本語ファイル.txt",
+                    "name": "日本語ファイル.txt",
+                    "type": "file",
+                    "size": 9,
+                    "location": 33,
+                    "date": "2026-10-07T17:55:40+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                },
+                {
+                    "path": "/ディレクトリ/ネスト.txt",
+                    "name": "ネスト.txt",
+                    "type": "file",
+                    "size": 7,
+                    "location": 34,
+                    "date": "2026-10-07T17:55:40+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                }
+            ]
+        },
+        {
+            "type": 255,
+            "name": "Terminator descriptor"
+        }
+    ]
+}

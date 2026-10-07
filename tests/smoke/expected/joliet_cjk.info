@@ -1,0 +1,56 @@
+Input ISO file: fixtures/joliet_cjk.iso
+
+Number of descriptors: 3
+  - Primary volume descriptor
+   - System ID: LINUX
+   - Volume ID: ボリューム中文
+   - App ID: GENISOIMAGE ISO 9660/HFS FILESYSTEM CREATOR (C) 1993 E.YOUNGDALE (C) 1997-2006 J.PEARSON/J.SCHILLING (C) 2006-2007 CDRKIT TEAM
+   - File Structure Version: 1
+   - Volume Space Size: 185
+   - Volume Set Size: 1
+   - Volume SeqNum: 1
+   - Block size: 2048
+   - Volume Set ID: 
+   - Publisher ID: 
+   - Preparer ID: 
+   - Copyright File ID: 
+   - Abstract File ID: 
+   - Bibliographic File ID: 
+   - Creation Date: 2026-10-07 17:55:40
+   - Modification Date: 2026-10-07 17:55:40
+   - Expiration Date: 
+   - Effective Date: 2026-10-07 17:55:40
+   - Files:
+/_____000.TXT (location: 32) (length: 8)
+/________/
+/________.TXT (location: 33) (length: 9)
+/________/________.TXT (location: 34) (length: 7)
+
+  - Supplementary volume descriptor
+   - System ID: LINUX
+   - Volume ID: ボリューム中文
+   - App ID: GENISOIMAGE ISO 9660_HFS FILESYSTEM CREATOR (C) 1993 E.YOUNGDALE
+   - File Structure Version: 1
+   - Volume Space Size: 185
+   - Volume Set Size: 1
+   - Volume SeqNum: 1
+   - Block size: 2048
+   - Volume Set ID: 
+   - Publisher ID: 
+   - Preparer ID: 
+   - Copyright File ID: ?
+   - Abstract File ID: ?
+   - Bibliographic File ID: ?
+   - Creation Date: 2026-10-07 17:55:40
+   - Modification Date: 2026-10-07 17:55:40
+   - Expiration Date: 
+   - Effective Date: 2026-10-07 17:55:40
+   - Joliet Level: 3
+   - Files:
+/ディレクトリ/
+/中文文件.txt (location: 32) (length: 8)
+/日本語ファイル.txt (location: 33) (length: 9)
+/ディレクトリ/ネスト.txt (location: 34) (length: 7)
+
+  - Terminator descriptor
+

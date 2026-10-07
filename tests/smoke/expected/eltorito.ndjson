@@ -1,0 +1,5 @@
+{"path":"/boot","name":"boot","type":"directory","size":2048,"location":26,"date":"2026-10-07T19:08:26+00:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/readme.txt","name":"readme.txt","type":"file","size":9,"location":46,"date":"2026-10-07T19:08:26+00:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/boot/bios.bin","name":"bios.bin","type":"file","size":8192,"location":34,"date":"2026-10-07T19:08:26+00:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/boot/boot.cat","name":"boot.cat","type":"file","size":2048,"location":33,"date":"2023-11-14T22:13:20+00:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/boot/efi.img","name":"efi.img","type":"file","size":16384,"location":38,"date":"2026-10-07T19:08:26+00:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}

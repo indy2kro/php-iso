@@ -1,0 +1,19 @@
+/classes/
+/composer.json	624
+/examples/
+/classes/boot_catalog.class.php	2868
+/classes/boot_catalog_entry.class.php	7748
+/classes/buffer.class.php	6715
+/classes/descriptor.class.php	5520
+/classes/descriptor_boot.class.php	5973
+/classes/descriptor_partition.class.php	3093
+/classes/descriptor_terminator.class.php	1768
+/classes/descriptor_volume.class.php	11982
+/classes/file_dir_descriptors.class.php	10674
+/classes/file_iso.class.php	4702
+/classes/iso_date.class.php	2842
+/classes/iso_includes.php	743
+/classes/path_table_record.class.php	4054
+/examples/BootCatalog_test.php	1934
+/examples/iso_base_test.php	2491
+/examples/iso_files_test.php.php	2690

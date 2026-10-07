@@ -1,0 +1,64 @@
+Input ISO file: fixtures/iso9660_udf_imgburn.iso
+
+Number of descriptors: 6
+  - Primary volume descriptor
+   - System ID: 
+   - Volume ID: TEST_IMGBURN
+   - App ID: IMGBURN V2.5.8.0 - THE ULTIMATE IMAGE BURNER!
+   - File Structure Version: 1
+   - Volume Space Size: 599
+   - Volume Set Size: 1
+   - Volume SeqNum: 1
+   - Block size: 2048
+   - Volume Set ID: UNDEFINED
+   - Publisher ID: Johan van der Knijff
+   - Preparer ID: Johan
+   - Copyright File ID: 
+   - Abstract File ID: 
+   - Bibliographic File ID: 
+   - Creation Date: 2022-04-07 19:26:01
+   - Modification Date: 2022-04-07 19:26:01
+   - Expiration Date: 
+   - Effective Date: 
+   - Files:
+/NIMBIE.JPG (location: 564) (length: 69424)
+/README.TXT (location: 598) (length: 37)
+
+  - Supplementary volume descriptor
+   - System ID: 
+   - Volume ID: TEST_IMGBURN
+   - App ID: ImgBurn v2.5.8.0 - The Ultimate Image Burner!
+   - File Structure Version: 1
+   - Volume Space Size: 599
+   - Volume Set Size: 1
+   - Volume SeqNum: 1
+   - Block size: 2048
+   - Volume Set ID: UNDEFINED
+   - Publisher ID: Johan van der Knijff
+   - Preparer ID: Johan
+   - Copyright File ID: ?
+   - Abstract File ID: ?
+   - Bibliographic File ID: ?
+   - Creation Date: 2022-04-07 19:26:01
+   - Modification Date: 2022-04-07 19:26:01
+   - Expiration Date: 
+   - Effective Date: 
+   - Joliet Level: 3
+   - Files:
+/nimbie.jpg (location: 564) (length: 69424)
+/readme.txt (location: 598) (length: 37)
+
+  - Terminator descriptor
+
+  - UDF BEA01 descriptor
+
+  - UDF NSR02 descriptor
+
+  - UDF TEA descriptor
+
+  - UDF file system
+   - Volume ID: TEST_IMGBURN
+   - Files:
+/nimbie.jpg (location: 1155072) (length: 69424)
+/readme.txt (location: 1224704) (length: 37)
+

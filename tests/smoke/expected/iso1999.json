@@ -1,0 +1,129 @@
+{
+    "file": "fixtures/iso1999.iso",
+    "descriptors": [
+        {
+            "type": 1,
+            "name": "Primary volume descriptor",
+            "systemId": "LINUX",
+            "volumeId": "ISO1999",
+            "appId": "GENISOIMAGE ISO 9660/HFS FILESYSTEM CREATOR (C) 1993 E.YOUNGDALE (C) 1997-2006 J.PEARSON/J.SCHILLING (C) 2006-2007 CDRKIT TEAM",
+            "publisherId": "",
+            "preparerId": "",
+            "volumeSpaceSize": 178,
+            "blockSize": 2048,
+            "jolietLevel": 0,
+            "creationDate": "2026-10-07T17:55:40+00:00",
+            "modificationDate": "2026-10-07T17:55:40+00:00",
+            "expirationDate": null,
+            "effectiveDate": "2026-10-07T17:55:40+00:00",
+            "files": [
+                {
+                    "path": "/a_rather_long_file_name_for_level_four.txt",
+                    "name": "a_rather_long_file_name_for_level_four.txt",
+                    "type": "file",
+                    "size": 32,
+                    "location": 26,
+                    "date": "2026-10-07T17:55:40+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                },
+                {
+                    "path": "/subdir",
+                    "name": "subdir",
+                    "type": "directory",
+                    "size": 2048,
+                    "location": 25,
+                    "date": "2026-10-07T17:55:40+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                },
+                {
+                    "path": "/subdir/nested.dat",
+                    "name": "nested.dat",
+                    "type": "file",
+                    "size": 7,
+                    "location": 27,
+                    "date": "2026-10-07T17:55:40+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                }
+            ]
+        },
+        {
+            "type": 2,
+            "name": "Supplementary volume descriptor",
+            "systemId": "LINUX",
+            "volumeId": "ISO1999",
+            "appId": "GENISOIMAGE ISO 9660/HFS FILESYSTEM CREATOR (C) 1993 E.YOUNGDALE (C) 1997-2006 J.PEARSON/J.SCHILLING (C) 2006-2007 CDRKIT TEAM",
+            "publisherId": "",
+            "preparerId": "",
+            "volumeSpaceSize": 178,
+            "blockSize": 2048,
+            "jolietLevel": 0,
+            "creationDate": "2026-10-07T17:55:40+00:00",
+            "modificationDate": "2026-10-07T17:55:40+00:00",
+            "expirationDate": null,
+            "effectiveDate": "2026-10-07T17:55:40+00:00",
+            "files": [
+                {
+                    "path": "/a_rather_long_file_name_for_level_four.txt",
+                    "name": "a_rather_long_file_name_for_level_four.txt",
+                    "type": "file",
+                    "size": 32,
+                    "location": 26,
+                    "date": "2026-10-07T17:55:40+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                },
+                {
+                    "path": "/subdir",
+                    "name": "subdir",
+                    "type": "directory",
+                    "size": 2048,
+                    "location": 25,
+                    "date": "2026-10-07T17:55:40+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                },
+                {
+                    "path": "/subdir/nested.dat",
+                    "name": "nested.dat",
+                    "type": "file",
+                    "size": 7,
+                    "location": 27,
+                    "date": "2026-10-07T17:55:40+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                }
+            ]
+        },
+        {
+            "type": 255,
+            "name": "Terminator descriptor"
+        }
+    ]
+}

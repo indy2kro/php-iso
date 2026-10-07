@@ -1,0 +1,214 @@
+{
+    "file": "fixtures/eltorito.iso",
+    "descriptors": [
+        {
+            "type": 1,
+            "name": "Primary volume descriptor",
+            "systemId": "",
+            "volumeId": "ELTORITO",
+            "appId": "",
+            "publisherId": "",
+            "preparerId": "XORRISO-1.5.6 2023.06.07.180001, LIBISOBURN-1.5.6, LIBISOFS-1.5.6, LIBBURN-1.5.6",
+            "volumeSpaceSize": 197,
+            "blockSize": 2048,
+            "jolietLevel": 0,
+            "creationDate": "2023-11-14T22:13:20+00:00",
+            "modificationDate": "2023-11-14T22:13:20+00:00",
+            "expirationDate": null,
+            "effectiveDate": null,
+            "files": [
+                {
+                    "path": "/boot",
+                    "name": "boot",
+                    "type": "directory",
+                    "size": 2048,
+                    "location": 22,
+                    "date": "2026-10-07T19:08:26+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": 16877,
+                    "uid": 0,
+                    "gid": 0,
+                    "symlink": null
+                },
+                {
+                    "path": "/readme.txt",
+                    "name": "readme.txt",
+                    "type": "file",
+                    "size": 9,
+                    "location": 46,
+                    "date": "2026-10-07T19:08:26+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": 33188,
+                    "uid": 0,
+                    "gid": 0,
+                    "symlink": null
+                },
+                {
+                    "path": "/boot/bios.bin",
+                    "name": "bios.bin",
+                    "type": "file",
+                    "size": 8192,
+                    "location": 34,
+                    "date": "2026-10-07T19:08:26+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": 33188,
+                    "uid": 0,
+                    "gid": 0,
+                    "symlink": null
+                },
+                {
+                    "path": "/boot/boot.cat",
+                    "name": "boot.cat",
+                    "type": "file",
+                    "size": 2048,
+                    "location": 33,
+                    "date": "2023-11-14T22:13:20+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": 33060,
+                    "uid": 0,
+                    "gid": 0,
+                    "symlink": null
+                },
+                {
+                    "path": "/boot/efi.img",
+                    "name": "efi.img",
+                    "type": "file",
+                    "size": 16384,
+                    "location": 38,
+                    "date": "2026-10-07T19:08:26+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": 33188,
+                    "uid": 0,
+                    "gid": 0,
+                    "symlink": null
+                }
+            ]
+        },
+        {
+            "type": 0,
+            "name": "Boot volume descriptor",
+            "bootSystemId": "EL TORITO SPECIFICATION",
+            "bootId": "",
+            "bootCatalogLocation": 33,
+            "bootCatalog": {
+                "validChecksum": true,
+                "manufacturer": "",
+                "entries": [
+                    {
+                        "bootable": true,
+                        "platform": "x86",
+                        "media": "No emulation",
+                        "loadSegment": 0,
+                        "sectorCount": 4,
+                        "loadRba": 34
+                    },
+                    {
+                        "bootable": true,
+                        "platform": "EFI",
+                        "media": "No emulation",
+                        "loadSegment": 0,
+                        "sectorCount": 32,
+                        "loadRba": 38
+                    }
+                ]
+            }
+        },
+        {
+            "type": 2,
+            "name": "Supplementary volume descriptor",
+            "systemId": "",
+            "volumeId": "ELTORITO",
+            "appId": "",
+            "publisherId": "",
+            "preparerId": "XORRISO-1.5.6 2023.06.07.180001, LIBISOBURN-1.5.6, LIBISOFS-1.5.",
+            "volumeSpaceSize": 197,
+            "blockSize": 2048,
+            "jolietLevel": 3,
+            "creationDate": "2023-11-14T22:13:20+00:00",
+            "modificationDate": "2023-11-14T22:13:20+00:00",
+            "expirationDate": null,
+            "effectiveDate": null,
+            "files": [
+                {
+                    "path": "/boot",
+                    "name": "boot",
+                    "type": "directory",
+                    "size": 2048,
+                    "location": 26,
+                    "date": "2026-10-07T19:08:26+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                },
+                {
+                    "path": "/readme.txt",
+                    "name": "readme.txt",
+                    "type": "file",
+                    "size": 9,
+                    "location": 46,
+                    "date": "2026-10-07T19:08:26+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                },
+                {
+                    "path": "/boot/bios.bin",
+                    "name": "bios.bin",
+                    "type": "file",
+                    "size": 8192,
+                    "location": 34,
+                    "date": "2026-10-07T19:08:26+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                },
+                {
+                    "path": "/boot/boot.cat",
+                    "name": "boot.cat",
+                    "type": "file",
+                    "size": 2048,
+                    "location": 33,
+                    "date": "2023-11-14T22:13:20+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                },
+                {
+                    "path": "/boot/efi.img",
+                    "name": "efi.img",
+                    "type": "file",
+                    "size": 16384,
+                    "location": 38,
+                    "date": "2026-10-07T19:08:26+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                }
+            ]
+        },
+        {
+            "type": 255,
+            "name": "Terminator descriptor"
+        }
+    ]
+}

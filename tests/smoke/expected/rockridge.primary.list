@@ -1,0 +1,9 @@
+/dir1/
+/hello.txt	17
+/link_to_hello	0	-> hello.txt
+/long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_.txt	5
+/dir1/dir2/
+/dir1/dir2/dir3/
+/dir1/dir2/dir3/dir4/
+/dir1/dir2/dir3/dir4/dir5/
+/dir1/dir2/dir3/dir4/dir5/deep.txt	5

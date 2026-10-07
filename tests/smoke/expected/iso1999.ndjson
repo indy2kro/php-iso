@@ -1,0 +1,3 @@
+{"path":"/a_rather_long_file_name_for_level_four.txt","name":"a_rather_long_file_name_for_level_four.txt","type":"file","size":32,"location":26,"date":"2026-10-07T17:55:40+00:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/subdir","name":"subdir","type":"directory","size":2048,"location":25,"date":"2026-10-07T17:55:40+00:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/subdir/nested.dat","name":"nested.dat","type":"file","size":7,"location":27,"date":"2026-10-07T17:55:40+00:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}

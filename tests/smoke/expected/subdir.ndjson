@@ -1,0 +1,7 @@
+{"path":"/DIR1","name":"DIR1","type":"directory","size":2048,"location":24,"date":"2025-01-15T16:06:39+02:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/TEST1.TXT","name":"TEST1.TXT","type":"file","size":6,"location":27,"date":"2025-01-15T16:06:46+02:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/DIR1/DIR2","name":"DIR2","type":"directory","size":2048,"location":25,"date":"2025-01-15T16:06:28+02:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/DIR1/TEST2.TXT","name":"TEST2.TXT","type":"file","size":6,"location":28,"date":"2025-01-15T16:06:39+02:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/DIR1/DIR2/DIR3","name":"DIR3","type":"directory","size":2048,"location":26,"date":"2025-01-15T16:06:33+02:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/DIR1/DIR2/TEST3.TXT","name":"TEST3.TXT","type":"file","size":6,"location":29,"date":"2025-01-15T16:06:28+02:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/DIR1/DIR2/DIR3/TEST4.TXT","name":"TEST4.TXT","type":"file","size":6,"location":30,"date":"2025-01-15T16:06:33+02:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}

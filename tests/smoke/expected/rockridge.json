@@ -1,0 +1,153 @@
+{
+    "file": "fixtures/rockridge.iso",
+    "descriptors": [
+        {
+            "type": 1,
+            "name": "Primary volume descriptor",
+            "systemId": "",
+            "volumeId": "ROCKRIDGE",
+            "appId": "",
+            "publisherId": "",
+            "preparerId": "XORRISO-1.5.6 2023.06.07.180001, LIBISOBURN-1.5.6, LIBISOFS-1.5.6, LIBBURN-1.5.6",
+            "volumeSpaceSize": 186,
+            "blockSize": 2048,
+            "jolietLevel": 0,
+            "creationDate": "2023-11-14T22:13:20+00:00",
+            "modificationDate": "2023-11-14T22:13:20+00:00",
+            "expirationDate": null,
+            "effectiveDate": null,
+            "files": [
+                {
+                    "path": "/dir1",
+                    "name": "dir1",
+                    "type": "directory",
+                    "size": 2048,
+                    "location": 20,
+                    "date": "2026-10-07T17:55:40+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": 16877,
+                    "uid": 0,
+                    "gid": 0,
+                    "symlink": null
+                },
+                {
+                    "path": "/hello.txt",
+                    "name": "hello.txt",
+                    "type": "file",
+                    "size": 17,
+                    "location": 34,
+                    "date": "2026-10-07T17:55:40+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": 33188,
+                    "uid": 0,
+                    "gid": 0,
+                    "symlink": null
+                },
+                {
+                    "path": "/link_to_hello",
+                    "name": "link_to_hello",
+                    "type": "file",
+                    "size": 0,
+                    "location": 32,
+                    "date": "2026-10-07T17:55:40+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": 41471,
+                    "uid": 0,
+                    "gid": 0,
+                    "symlink": "hello.txt"
+                },
+                {
+                    "path": "/long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_.txt",
+                    "name": "long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_.txt",
+                    "type": "file",
+                    "size": 5,
+                    "location": 35,
+                    "date": "2026-10-07T17:55:40+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": 33188,
+                    "uid": 0,
+                    "gid": 0,
+                    "symlink": null
+                },
+                {
+                    "path": "/dir1/dir2",
+                    "name": "dir2",
+                    "type": "directory",
+                    "size": 2048,
+                    "location": 21,
+                    "date": "2026-10-07T17:55:40+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": 16877,
+                    "uid": 0,
+                    "gid": 0,
+                    "symlink": null
+                },
+                {
+                    "path": "/dir1/dir2/dir3",
+                    "name": "dir3",
+                    "type": "directory",
+                    "size": 2048,
+                    "location": 22,
+                    "date": "2026-10-07T17:55:40+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": 16877,
+                    "uid": 0,
+                    "gid": 0,
+                    "symlink": null
+                },
+                {
+                    "path": "/dir1/dir2/dir3/dir4",
+                    "name": "dir4",
+                    "type": "directory",
+                    "size": 2048,
+                    "location": 23,
+                    "date": "2026-10-07T17:55:40+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": 16877,
+                    "uid": 0,
+                    "gid": 0,
+                    "symlink": null
+                },
+                {
+                    "path": "/dir1/dir2/dir3/dir4/dir5",
+                    "name": "dir5",
+                    "type": "directory",
+                    "size": 2048,
+                    "location": 24,
+                    "date": "2026-10-07T17:55:40+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": 16877,
+                    "uid": 0,
+                    "gid": 0,
+                    "symlink": null
+                },
+                {
+                    "path": "/dir1/dir2/dir3/dir4/dir5/deep.txt",
+                    "name": "deep.txt",
+                    "type": "file",
+                    "size": 5,
+                    "location": 33,
+                    "date": "2026-10-07T17:55:40+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": 33188,
+                    "uid": 0,
+                    "gid": 0,
+                    "symlink": null
+                }
+            ]
+        },
+        {
+            "type": 255,
+            "name": "Terminator descriptor"
+        }
+    ]
+}

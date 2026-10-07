@@ -1,0 +1,52 @@
+Input ISO file: fixtures/iso9660_hfs_part.iso
+
+Number of descriptors: 3
+  - Primary volume descriptor
+   - System ID: LINUX
+   - Volume ID: ISO9660/HFS/part_table
+   - App ID: GENISOIMAGE ISO 9660/HFS FILESYSTEM CREATOR (C) 1993 E.YOUNGDALE (C) 1997-2006 J.PEARSON/J.SCHILLING (C) 2006-2007 CDRKIT TEAM
+   - File Structure Version: 1
+   - Volume Space Size: 591
+   - Volume Set Size: 1
+   - Volume SeqNum: 1
+   - Block size: 2048
+   - Volume Set ID: 
+   - Publisher ID: 
+   - Preparer ID: 
+   - Copyright File ID: 
+   - Abstract File ID: 
+   - Bibliographic File ID: 
+   - Creation Date: 2022-04-07 20:31:13
+   - Modification Date: 2022-04-07 20:31:13
+   - Expiration Date: 
+   - Effective Date: 2022-04-07 20:31:13
+   - Files:
+/nimbie.jpg (location: 31) (length: 69424)
+/readme.txt (location: 65) (length: 37)
+
+  - Supplementary volume descriptor
+   - System ID: LINUX
+   - Volume ID: ISO9660_HFS_part
+   - App ID: GENISOIMAGE ISO 9660_HFS FILESYSTEM CREATOR (C) 1993 E.YOUNGDALE
+   - File Structure Version: 1
+   - Volume Space Size: 591
+   - Volume Set Size: 1
+   - Volume SeqNum: 1
+   - Block size: 2048
+   - Volume Set ID: 
+   - Publisher ID: 
+   - Preparer ID: 
+   - Copyright File ID: ?
+   - Abstract File ID: ?
+   - Bibliographic File ID: ?
+   - Creation Date: 2022-04-07 20:31:13
+   - Modification Date: 2022-04-07 20:31:13
+   - Expiration Date: 
+   - Effective Date: 2022-04-07 20:31:13
+   - Joliet Level: 3
+   - Files:
+/nimbie.jpg (location: 31) (length: 69424)
+/readme.txt (location: 65) (length: 37)
+
+  - Terminator descriptor
+

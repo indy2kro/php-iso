@@ -101,14 +101,12 @@ jobs:
           if: matrix.os != 'ubuntu-latest'
           run: vendor/bin/phpunit --no-coverage
 
-        - name: Smoke test the CLI
-          if: matrix.os != 'windows-latest'
-          run: php bin/isotool -f fixtures/test.iso -l
+        - name: Smoke tests (tests/smoke/run.sh)
+          run: bash tests/smoke/run.sh
 
-        - name: Smoke test the CLI (Windows batch file)
+        - name: Smoke tests through the Windows batch file
           if: matrix.os == 'windows-latest'
-          shell: cmd
-          run: bin\isotool.bat -f fixtures/test.iso -l
+          run: ISOTOOL=bin/isotool.bat bash tests/smoke/run.sh
 
         - name: Upload test results to Codecov
           if: ${{ !cancelled() && matrix.os == 'ubuntu-latest' }}

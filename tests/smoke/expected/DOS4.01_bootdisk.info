@@ -1,0 +1,67 @@
+Input ISO file: fixtures/DOS4.01_bootdisk.iso
+
+Number of descriptors: 4
+  - Primary volume descriptor
+   - System ID: 
+   - Volume ID: DOS4.01
+   - App ID: 
+   - File Structure Version: 1
+   - Volume Space Size: 848
+   - Volume Set Size: 1
+   - Volume SeqNum: 1
+   - Block size: 2048
+   - Volume Set ID: 
+   - Publisher ID: WinISO software
+   - Preparer ID: WinISO software
+   - Copyright File ID: 
+   - Abstract File ID: 
+   - Bibliographic File ID: 
+   - Creation Date: 2005-01-26 08:25:06
+   - Modification Date: 2005-01-26 08:25:06
+   - Expiration Date: 
+   - Effective Date: 
+   - Files:
+/COMMAND.COM (location: 745) (length: 37557)
+/FDISK.EXE (location: 764) (length: 60935)
+/FORMAT.COM (location: 794) (length: 22875)
+/IO.SYS (location: 806) (length: 33337)
+/MSDOS.SYS (location: 823) (length: 37376)
+/SYS.COM (location: 842) (length: 11456)
+
+  - Boot volume descriptor
+   - Boot System ID: EL TORITO SPECIFICATION
+   - Boot ID: 
+   - Boot Catalog Location: 24
+   - Boot Catalog Checksum: valid
+   - Boot Entry 1: bootable, platform x86, media 1.44 MB floppy, load segment 0x0, sectors 1, load RBA 25
+
+  - Supplementary volume descriptor
+   - System ID: 
+   - Volume ID: DOS4.01
+   - App ID: 
+   - File Structure Version: 1
+   - Volume Space Size: 848
+   - Volume Set Size: 1
+   - Volume SeqNum: 1
+   - Block size: 2048
+   - Volume Set ID: 
+   - Publisher ID: 坩湉协⁳潦瑷慲攀
+   - Preparer ID: 坩湉协⁳潦瑷慲攀
+   - Copyright File ID: 
+   - Abstract File ID: 
+   - Bibliographic File ID: 
+   - Creation Date: 2005-01-26 08:25:06
+   - Modification Date: 2005-01-26 08:25:06
+   - Expiration Date: 
+   - Effective Date: 
+   - Joliet Level: 3
+   - Files:
+/COMMAND.COM (location: 745) (length: 37557)
+/FDISK.EXE (location: 764) (length: 60935)
+/FORMAT.COM (location: 794) (length: 22875)
+/IO.SYS (location: 806) (length: 33337)
+/MSDOS.SYS (location: 823) (length: 37376)
+/SYS.COM (location: 842) (length: 11456)
+
+  - Terminator descriptor
+
