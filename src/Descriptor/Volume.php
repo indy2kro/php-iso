@@ -143,6 +143,7 @@ abstract class Volume extends Descriptor implements FileSystem
 
         $supplementary = (static::TYPE === Type::SUPPLEMENTARY_VOLUME_DESC);
         $visited = [$this->rootDirectory->location => true];
+        $skip = 0;
 
         // explicit stack instead of recursion: a hostile image cannot exhaust the PHP stack
         /** @var list<array{string, int, int|null, int}> $stack path, location, length (null: read it from the directory), depth */
@@ -159,11 +160,21 @@ abstract class Volume extends Descriptor implements FileSystem
             $subDirectories = [];
             $pending = null;
             foreach ($records as $record) {
+                // the SP entry of the first record of the root directory tells how many bytes to skip in every system use area
+                if ($depth === 0 && $base === '' && $record->isThis()) {
+                    $skip = RockRidge::detectSkip($record->systemUse) ?? 0;
+                }
+
                 if ($record->isThis() || $record->isParent()) {
                     continue;
                 }
 
-                $rr = ($supplementary || ! $rockRidge) ? null : RockRidge::parse($record->systemUse, $isoFile, $this->blockSize);
+                // associated files (e.g. resource forks) share the name of their data file
+                if ($record->isAssociated()) {
+                    continue;
+                }
+
+                $rr = ($supplementary || ! $rockRidge) ? null : RockRidge::parse($record->systemUse, $isoFile, $this->blockSize, $skip);
 
                 // the real directory is listed through its "child link" placeholder
                 if ($rr instanceof RockRidgeInfo && $rr->relocated) {
@@ -176,12 +187,12 @@ abstract class Volume extends Descriptor implements FileSystem
 
                 // a multi-extent file is stored as several records (all but the last flagged), report it once
                 if (! $record->isDirectory() && ($record->isMultiExtent() || $pending !== null)) {
-                    if ($pending !== null && $pending->name !== $record->fileId) {
+                    if ($pending !== null && $pending->name !== $name) {
                         yield $pending;
                         $pending = null;
                     }
 
-                    $pending = $this->appendExtent($pending, $path, $record);
+                    $pending = $this->appendExtent($pending, $path, $record, $name, $rr);
 
                     if (! $record->isMultiExtent()) {
                         yield $pending;
@@ -194,8 +205,10 @@ abstract class Volume extends Descriptor implements FileSystem
                 $link = $rr?->childLocation;
                 $isDirectory = $record->isDirectory() || $link !== null;
                 $location = $link ?? $record->location;
+                // the data of a file starts after its extended attribute record
+                $dataLocation = $isDirectory ? $location : $this->dataLocation($record);
 
-                yield new IsoEntry($path, $name, $isDirectory, $link === null ? $record->dataLength : 0, $location, $record->recordingDate, $record->isHidden(), [], $rr);
+                yield new IsoEntry($path, $name, $isDirectory, $link === null ? $record->dataLength : 0, $dataLocation, $record->recordingDate, $record->isHidden(), [], $rr);
 
                 if ($isDirectory && $depth < $maxDepth && ! isset($visited[$location])) {
                     $visited[$location] = true;
@@ -217,16 +230,26 @@ abstract class Volume extends Descriptor implements FileSystem
     /**
      * Add the extent of a record to the multi-extent entry being built (a new entry when there is none yet)
      */
-    protected function appendExtent(?IsoEntry $pending, string $path, FileDirectory $record): IsoEntry
+    protected function appendExtent(?IsoEntry $pending, string $path, FileDirectory $record, ?string $name = null, ?RockRidgeInfo $rr = null): IsoEntry
     {
+        $location = $this->dataLocation($record);
+
         if (! $pending instanceof IsoEntry) {
-            return new IsoEntry($path, $record->fileId, false, $record->dataLength, $record->location, $record->recordingDate, $record->isHidden(), [[$record->location, $record->dataLength]]);
+            return new IsoEntry($path, $name ?? $record->fileId, false, $record->dataLength, $location, $record->recordingDate, $record->isHidden(), [[$location, $record->dataLength]], $rr);
         }
 
         $extents = $pending->extents;
-        $extents[] = [$record->location, $record->dataLength];
+        $extents[] = [$location, $record->dataLength];
 
-        return new IsoEntry($pending->path, $pending->name, false, $pending->size + $record->dataLength, $pending->location, $pending->recordingDate, $pending->isHidden, $extents);
+        return new IsoEntry($pending->path, $pending->name, false, $pending->size + $record->dataLength, $pending->location, $pending->recordingDate, $pending->isHidden, $extents, $pending->rockRidge ?? $rr);
+    }
+
+    /**
+     * Block where the data of a file record starts: the extended attribute record comes first
+     */
+    private function dataLocation(FileDirectory $record): int
+    {
+        return $record->location + $record->extendedAttrRecordLength;
     }
 
     /**

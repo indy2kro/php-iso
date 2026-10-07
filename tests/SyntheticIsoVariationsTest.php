@@ -207,7 +207,7 @@ final class SyntheticIsoVariationsTest extends TestCase
         $table = $volume->loadTable($isoFile);
         $this->assertNotNull($table);
 
-        $this->assertSame(DIRECTORY_SEPARATOR . 'A' . DIRECTORY_SEPARATOR . 'B' . DIRECTORY_SEPARATOR . 'C' . DIRECTORY_SEPARATOR, $table[4]->getFullPath($table));
+        $this->assertSame('/A/B/C/', $table[4]->getFullPath($table));
     }
 
     public function testEntriesExposeSizeAndLocation(): void

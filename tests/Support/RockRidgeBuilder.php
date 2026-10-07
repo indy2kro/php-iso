@@ -54,6 +54,37 @@ final class RockRidgeBuilder
         return self::entry('CE', IsoBuilder::bbo32($block) . IsoBuilder::bbo32($offset) . IsoBuilder::bbo32($length));
     }
 
+    /**
+     * The SP indicator of the "." record of the root directory
+     */
+    public static function sp(int $skip = 0): string
+    {
+        return 'SP' . chr(7) . chr(1) . chr(0xBE) . chr(0xEF) . chr($skip);
+    }
+
+    /**
+     * @param string $timestamps the raw timestamps, in the order of the flag bits (see date7() / date17())
+     */
+    public static function tf(int $flags, string $timestamps): string
+    {
+        return self::entry('TF', chr($flags) . $timestamps);
+    }
+
+    public static function date7(int $year, int $month, int $day, int $hour = 0, int $minute = 0, int $second = 0): string
+    {
+        return chr($year - 1900) . chr($month) . chr($day) . chr($hour) . chr($minute) . chr($second) . chr(0);
+    }
+
+    public static function date17(int $year, int $month, int $day, int $hour = 0, int $minute = 0, int $second = 0): string
+    {
+        return sprintf('%04d%02d%02d%02d%02d%02d00', $year, $month, $day, $hour, $minute, $second) . chr(0);
+    }
+
+    public static function pn(int $high, int $low): string
+    {
+        return self::entry('PN', IsoBuilder::bbo32($high) . IsoBuilder::bbo32($low));
+    }
+
     private static function entry(string $signature, string $payload): string
     {
         return $signature . chr(4 + strlen($payload)) . chr(1) . $payload;

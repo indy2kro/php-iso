@@ -167,12 +167,18 @@ class FileDirectory
         } else {
             $fileId = Buffer::readDString($buffer, $fileIdLength, $tmp, $supplementary);
 
-            $pos = strpos($fileId, ';1');
-            if ($pos !== false && $pos === strlen($fileId) - 2) {
-                $fileId = substr($fileId, 0, strlen($fileId) - 2);
-            }
-
             $fileId = trim($fileId);
+
+            if (($flags & self::FILE_MODE_DIRECTORY) === 0) {
+                // drop the version (";1", ";32767"...)
+                $stripped = preg_replace('/;\d+$/', '', $fileId);
+                $fileId = $stripped ?? $fileId;
+
+                // ISO 9660 writes a separator dot after names without an extension ("README."), Joliet names are kept
+                if (! $supplementary && strlen($fileId) > 1 && str_ends_with($fileId, '.')) {
+                    $fileId = substr($fileId, 0, -1);
+                }
+            }
         }
 
         // the system use area (SUSP / Rock Ridge) follows the identifier and its padding byte

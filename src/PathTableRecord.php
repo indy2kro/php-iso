@@ -114,10 +114,10 @@ class PathTableRecord
     {
         if ($this->parentDirNum === 1) {
             if ($this->dirIdentifier === '') {
-                return DIRECTORY_SEPARATOR;
+                return '/';
             }
 
-            return DIRECTORY_SEPARATOR . $this->dirIdentifier . DIRECTORY_SEPARATOR;
+            return '/' . $this->dirIdentifier . '/';
         }
 
         $path = $this->dirIdentifier;
@@ -132,7 +132,7 @@ class PathTableRecord
                 throw new Exception('Maximum depth of 1000 reached');
             }
 
-            $path = $used->dirIdentifier . DIRECTORY_SEPARATOR . $path;
+            $path = $used->dirIdentifier . '/' . $path;
 
             if ($used->parentDirNum === 1) {
                 break;
@@ -141,6 +141,6 @@ class PathTableRecord
             $used = $pathTable[$used->parentDirNum] ?? throw new Exception('Missing parent directory in path table: ' . $used->parentDirNum);
         }
 
-        return DIRECTORY_SEPARATOR . $path . DIRECTORY_SEPARATOR;
+        return '/' . $path . '/';
     }
 }
