@@ -14,7 +14,14 @@ use PhpIso\Util\IsoDate;
 
 /**
  * Read only access to the UDF file system of an image (ECMA-167 / OSTA UDF, 2048 bytes blocks,
- * plain partition maps; sparable, virtual and metadata partitions are not supported)
+ * plain and metadata (UDF 2.50) partition maps; sparable and virtual partitions are not supported)
+ *
+ * Descriptor tags are verified (checksum and location, ECMA-167 3/7.2): a descriptor failing the check is
+ * treated as absent. Allocation extents are checked against the length of their partition.
+ *
+ * Limits of the metadata partition support: the metadata file is read, the mirror file and the bitmap file are
+ * ignored (no fallback when the metadata file is damaged), and the data of files whose short allocation
+ * descriptors sit in a file entry of the metadata partition is read from the underlying physical partition.
  *
  * For the entries produced here "location" and the extents hold absolute byte offsets in the image
  * (a negative offset is a sparse extent, read as zeros).
@@ -45,11 +52,13 @@ final readonly class UdfFileSystem implements FileSystem
     private const int MAX_EXTENTS = 100000;
     private const int MAX_CONTINUATIONS = 64;
 
+    private const string METADATA_IDENTIFIER = '*UDF Metadata Partition';
+
     /**
-     * @param array<int, int> $partitionStarts partition map index => first sector of the partition
+     * @param array<int, UdfPartition> $partitions partition map index => partition
      */
     private function __construct(
-        private array $partitionStarts,
+        private array $partitions,
         private int $rootPartition,
         private int $rootBlock,
         public string $volumeId,
@@ -72,7 +81,7 @@ final readonly class UdfFileSystem implements FileSystem
 
         $anchor = null;
         foreach ([256, $sectors - 257, $sectors - 1] as $candidate) {
-            $data = self::readSector($isoFile, $candidate);
+            $data = self::readDescriptor($isoFile, $candidate, $candidate);
             if ($data !== null && self::tag($data) === self::TAG_ANCHOR) {
                 $anchor = $data;
                 break;
@@ -99,7 +108,7 @@ final readonly class UdfFileSystem implements FileSystem
             $volumeId = '';
 
             for ($i = 0; $i < min(intdiv($length, self::SECTOR), self::MAX_VDS_SECTORS); $i++) {
-                $data = self::readSector($isoFile, $location + $i);
+                $data = self::readDescriptor($isoFile, $location + $i, $location + $i);
                 if ($data === null) {
                     break;
                 }
@@ -112,7 +121,7 @@ final readonly class UdfFileSystem implements FileSystem
                 if ($tag === self::TAG_PRIMARY_VOLUME) {
                     $volumeId = self::dstring(substr($data, 24, 32));
                 } elseif ($tag === self::TAG_PARTITION) {
-                    $partitions[self::u16($data, 22)] = self::u32($data, 188);
+                    $partitions[self::u16($data, 22)] = [self::u32($data, 188), self::u32($data, 192)];
                 } elseif ($tag === self::TAG_LOGICAL_VOLUME) {
                     [$maps, $fileSet] = self::parseLogicalVolume($data);
                 }
@@ -127,13 +136,26 @@ final readonly class UdfFileSystem implements FileSystem
             throw new Exception('Incomplete UDF volume descriptor sequence');
         }
 
-        $starts = [];
-        foreach ($maps as $index => $partitionNumber) {
+        // plain partitions first, a metadata partition lives inside of one of them
+        $physical = [];
+        foreach ($maps as $index => [$partitionNumber, $metadataBlock]) {
             if (! isset($partitions[$partitionNumber])) {
                 throw new Exception('UDF partition ' . $partitionNumber . ' not found');
             }
-            $starts[$index] = $partitions[$partitionNumber];
+
+            if ($metadataBlock < 0) {
+                $physical[$index] = UdfPartition::physical(...$partitions[$partitionNumber]);
+            }
         }
+
+        $starts = $physical;
+        foreach ($maps as $index => [$partitionNumber, $metadataBlock]) {
+            if ($metadataBlock >= 0) {
+                $underlying = UdfPartition::physical(...$partitions[$partitionNumber]);
+                $starts[$index] = self::metadataPartition($isoFile, $physical, $underlying, $metadataBlock);
+            }
+        }
+        ksort($starts);
 
         [$fsdLength, $fsdBlock, $fsdPartition] = $fileSet;
         if (! isset($starts[$fsdPartition])) {
@@ -142,7 +164,8 @@ final readonly class UdfFileSystem implements FileSystem
 
         // the file set descriptor holds the root directory
         for ($i = 0; $i < min(max(intdiv($fsdLength, self::SECTOR), 1), 16); $i++) {
-            $data = self::readSector($isoFile, $starts[$fsdPartition] + $fsdBlock + $i);
+            $offset = $starts[$fsdPartition]->offset($fsdBlock + $i);
+            $data = $offset === null ? null : self::readDescriptor($isoFile, intdiv($offset, self::SECTOR), $fsdBlock + $i);
             if ($data !== null && self::tag($data) === self::TAG_FILE_SET) {
                 return new self($starts, self::u16($data, 408), self::u32($data, 404), $volumeId);
             }
@@ -224,7 +247,27 @@ final readonly class UdfFileSystem implements FileSystem
     }
 
     /**
-     * @return array{array<int, int>, array{int, int, int}} partition maps (index => partition number) and the file set location
+     * Read the metadata file of a metadata partition and build the partition from its extents
+     *
+     * @param array<int, UdfPartition> $physical the plain partitions known so far (allocation descriptor references)
+     *
+     * @throws Exception when the metadata file cannot be read
+     */
+    private static function metadataPartition(IsoFile $isoFile, array $physical, UdfPartition $underlying, int $metadataBlock): UdfPartition
+    {
+        $reader = new self($physical, 0, 0, '');
+        $node = $reader->readNodeIn($isoFile, $underlying, $metadataBlock);
+
+        if (! $node instanceof UdfNode || $node->isDirectory) {
+            throw new Exception('UDF metadata file not found');
+        }
+
+        return UdfPartition::metadata($node->extents, $underlying);
+    }
+
+    /**
+     * @return array{array<int, array{int, int}>, array{int, int, int}} partition maps (index => partition number and
+     *         block of the metadata file, -1 for a plain partition) and the file set location
      *
      * @throws Exception
      */
@@ -245,11 +288,20 @@ final readonly class UdfFileSystem implements FileSystem
             $type = ord($data[$offset]);
             $length = ord($data[$offset + 1]);
 
-            if ($type !== 1 || $length < 6) {
-                throw new Exception('Unsupported UDF partition map (type ' . $type . '): only plain partitions can be read');
+            if ($type === 1 && $length >= 6) {
+                $maps[$i] = [self::u16($data, $offset + 4), -1];
+            } elseif ($type === 2 && $length >= 44) {
+                // partition type identifier: entity identifier at offset 4 (flags, then 23 characters)
+                $identifier = rtrim(substr($data, $offset + 5, 23), "\0");
+                if ($identifier !== self::METADATA_IDENTIFIER) {
+                    throw new Exception('Unsupported UDF partition map (' . ($identifier === '' ? 'type 2' : $identifier) . '): only plain and metadata partitions can be read');
+                }
+
+                $maps[$i] = [self::u16($data, $offset + 38), self::u32($data, $offset + 40)];
+            } else {
+                throw new Exception('Unsupported UDF partition map (type ' . $type . '): only plain and metadata partitions can be read');
             }
 
-            $maps[$i] = self::u16($data, $offset + 4);
             $offset += $length;
         }
 
@@ -258,12 +310,22 @@ final readonly class UdfFileSystem implements FileSystem
 
     private function readNode(IsoFile $isoFile, int $partition, int $block): ?UdfNode
     {
-        $start = $this->partitionStarts[$partition] ?? null;
-        if ($start === null) {
+        $reference = $this->partitions[$partition] ?? null;
+
+        return $reference === null ? null : $this->readNodeIn($isoFile, $reference, $block);
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function readNodeIn(IsoFile $isoFile, UdfPartition $partition, int $block): ?UdfNode
+    {
+        $offset = $partition->offset($block);
+        if ($offset === null) {
             return null;
         }
 
-        $data = self::readSector($isoFile, $start + $block);
+        $data = self::readDescriptor($isoFile, intdiv($offset, self::SECTOR), $block);
         if ($data === null) {
             return null;
         }
@@ -286,9 +348,10 @@ final readonly class UdfFileSystem implements FileSystem
             return null;
         }
 
-        $extents = $this->allocationExtents($isoFile, $data, $adStart, $adLength, $flags & 0x07, $size, $partition, ($start + $block) * self::SECTOR);
+        $isDirectory = $fileType === self::FILE_TYPE_DIRECTORY;
+        $extents = $this->allocationExtents($isoFile, $data, $adStart, $adLength, $flags & 0x07, $size, $partition, $isDirectory ? $partition : $partition->dataPartition(), $offset);
 
-        return new UdfNode($fileType === self::FILE_TYPE_DIRECTORY, $size, $extents, $modified);
+        return new UdfNode($isDirectory, $size, $extents, $modified);
     }
 
     /**
@@ -296,7 +359,7 @@ final readonly class UdfFileSystem implements FileSystem
      *
      * @throws Exception
      */
-    private function allocationExtents(IsoFile $isoFile, string $data, int $adStart, int $adLength, int $type, int $size, int $partition, int $sectorOffset): array
+    private function allocationExtents(IsoFile $isoFile, string $data, int $adStart, int $adLength, int $type, int $size, UdfPartition $partition, UdfPartition $dataPartition, int $sectorOffset): array
     {
         // data embedded in the file entry itself
         if ($type === 3) {
@@ -319,7 +382,7 @@ final readonly class UdfFileSystem implements FileSystem
                 $kind = $raw >> 30;
                 $length = $raw & 0x3FFFFFFF;
                 $block = self::u32($area, $pos + 4);
-                $reference = $type === 1 ? self::u16($area, $pos + 8) : $partition;
+                $reference = $type === 1 ? self::u16($area, $pos + 8) : null;
 
                 if ($length === 0 && $kind === 0) {
                     break 2;
@@ -327,11 +390,13 @@ final readonly class UdfFileSystem implements FileSystem
 
                 // the next allocation descriptors are stored in an allocation extent
                 if ($kind === 3) {
-                    if (++$continuations > self::MAX_CONTINUATIONS || ! isset($this->partitionStarts[$reference])) {
+                    $target = $reference === null ? $partition : ($this->partitions[$reference] ?? null);
+                    if (++$continuations > self::MAX_CONTINUATIONS || $target === null) {
                         throw new Exception('Invalid UDF allocation extent chain');
                     }
 
-                    $next = self::readSector($isoFile, $this->partitionStarts[$reference] + $block);
+                    $offset = $target->offset($block);
+                    $next = $offset === null ? null : self::readDescriptor($isoFile, intdiv($offset, self::SECTOR), $block);
                     if ($next === null || self::tag($next) !== self::TAG_ALLOCATION_EXTENT) {
                         throw new Exception('Invalid UDF allocation extent');
                     }
@@ -349,8 +414,19 @@ final readonly class UdfFileSystem implements FileSystem
                     break 2;
                 }
 
-                if ($kind === 0 && isset($this->partitionStarts[$reference])) {
-                    $extents[] = [($this->partitionStarts[$reference] + $block) * self::SECTOR, $length];
+                $target = $reference === null ? $dataPartition : ($this->partitions[$reference] ?? null);
+                if ($kind === 0 && $target !== null) {
+                    // an extent leaving its partition is corrupt (it may point anywhere in the image)
+                    $ranges = $target->ranges($block, $length);
+                    if ($ranges === null) {
+                        throw new Exception('UDF extent outside of its partition');
+                    }
+
+                    if (count($extents) + count($ranges) > self::MAX_EXTENTS) {
+                        throw new Exception('Too many UDF extents');
+                    }
+
+                    array_push($extents, ...$ranges);
                 } else {
                     $extents[] = [-1, $length];
                 }
@@ -475,6 +551,34 @@ final readonly class UdfFileSystem implements FileSystem
         $data = $isoFile->read(self::SECTOR);
 
         return ($data === false || strlen($data) < self::SECTOR) ? null : $data;
+    }
+
+    /**
+     * Read a descriptor and verify its tag: the checksum (byte 4 is the sum of the other bytes of the first 16
+     * modulo 256) and the location (the sector number of the descriptor, relative to the partition for the
+     * descriptors inside of one)
+     *
+     * @return string|null null when the sector cannot be read or the tag is not valid
+     */
+    private static function readDescriptor(IsoFile $isoFile, int $sector, int $location): ?string
+    {
+        $data = self::readSector($isoFile, $sector);
+        if ($data === null) {
+            return null;
+        }
+
+        $sum = 0;
+        for ($i = 0; $i < 16; $i++) {
+            if ($i !== 4) {
+                $sum += ord($data[$i]);
+            }
+        }
+
+        if (($sum & 0xFF) !== ord($data[4]) || self::u32($data, 12) !== $location) {
+            return null;
+        }
+
+        return $data;
     }
 
     private static function tag(string $data): int
