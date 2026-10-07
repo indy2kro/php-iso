@@ -102,11 +102,11 @@ jobs:
           run: vendor/bin/phpunit --no-coverage
 
         - name: Smoke tests (tests/smoke/run.sh)
-          run: tests/smoke/run.sh
+          run: bash tests/smoke/run.sh
 
         - name: Smoke tests through the Windows batch file
           if: matrix.os == 'windows-latest'
-          run: ISOTOOL=bin/isotool.bat tests/smoke/run.sh
+          run: ISOTOOL=bin/isotool.bat bash tests/smoke/run.sh
 
         - name: Upload test results to Codecov
           if: ${{ !cancelled() && matrix.os == 'ubuntu-latest' }}
