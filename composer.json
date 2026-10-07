@@ -33,7 +33,10 @@
     },
     "scripts": {
         "tests": "phpunit --no-coverage",
-        "tests:coverage": "phpunit --coverage-text",
+        "tests:coverage": [
+            "@putenv XDEBUG_MODE=coverage",
+            "phpunit --coverage-text"
+        ],
         "cs:check": "phpcs",
         "cs:fix": "phpcbf",
         "phpstan": "phpstan analyze",
