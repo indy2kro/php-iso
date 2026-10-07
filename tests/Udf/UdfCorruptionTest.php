@@ -250,7 +250,7 @@ final class UdfCorruptionTest extends TestCase
         $entry = $udf->find($isoFile, '/a.txt');
 
         $this->assertInstanceOf(IsoEntry::class, $entry);
-        $this->assertNotInstanceOf(\Carbon\Carbon::class, $entry->recordingDate);
+        $this->assertNotInstanceOf(\Carbon\CarbonImmutable::class, $entry->recordingDate);
     }
 
     public function testSparseExtentsAreReadAsZeros(): void

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PhpIso\Descriptor;
 
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use PhpIso\Descriptor;
 use PhpIso\BrowsesEntries;
 use PhpIso\Exception;
@@ -40,10 +40,10 @@ abstract class Volume extends Descriptor implements FileSystem
     public readonly string $copyrightFileId;
     public readonly string $abstractFileId;
     public readonly string $bibliographicFileId;
-    public readonly ?Carbon $creationDate;
-    public readonly ?Carbon $modificationDate;
-    public readonly ?Carbon $expirationDate;
-    public readonly ?Carbon $effectiveDate;
+    public readonly ?CarbonImmutable $creationDate;
+    public readonly ?CarbonImmutable $modificationDate;
+    public readonly ?CarbonImmutable $expirationDate;
+    public readonly ?CarbonImmutable $effectiveDate;
     public readonly int $fileStructureVersion;
     public readonly int $jolietLevel;
 

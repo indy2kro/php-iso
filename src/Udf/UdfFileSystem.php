@@ -518,7 +518,7 @@ final readonly class UdfFileSystem implements FileSystem
         return trim(self::decodeName(substr($raw, 0, $length)));
     }
 
-    private static function timestamp(string $data, int $offset): ?\Carbon\Carbon
+    private static function timestamp(string $data, int $offset): ?\Carbon\CarbonImmutable
     {
         $parts = unpack('vzone/vyear/Cmonth/Cday/Chour/Cminute/Csecond', substr($data, $offset, 9));
         if ($parts === false) {

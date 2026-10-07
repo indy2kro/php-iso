@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PhpIso;
 
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 
 /**
  * Rock Ridge (IEEE P1282) attributes of a directory record
@@ -31,13 +31,13 @@ final readonly class RockRidgeInfo
         /** Location of the real directory when this record is a "child link" placeholder */
         public ?int $childLocation = null,
         /** TF: creation time */
-        public ?Carbon $creationTime = null,
+        public ?CarbonImmutable $creationTime = null,
         /** TF: last modification time */
-        public ?Carbon $modifyTime = null,
+        public ?CarbonImmutable $modifyTime = null,
         /** TF: last access time */
-        public ?Carbon $accessTime = null,
+        public ?CarbonImmutable $accessTime = null,
         /** TF: last attribute change time */
-        public ?Carbon $attributesTime = null,
+        public ?CarbonImmutable $attributesTime = null,
         /** PN: high 32 bits of the device number of a device file */
         public ?int $deviceHigh = null,
         /** PN: low 32 bits of the device number of a device file */

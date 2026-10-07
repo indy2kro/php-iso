@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PhpIso;
 
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use PhpIso\Util\Buffer;
 use PhpIso\Util\IsoDate;
 
@@ -77,7 +77,7 @@ class FileDirectory
         /**
          * The recording date
          */
-        public readonly ?Carbon $recordingDate,
+        public readonly ?CarbonImmutable $recordingDate,
         /**
          * File (or folder) flags.
          */
