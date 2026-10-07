@@ -158,8 +158,10 @@ final class UdfBuilder
      *
      * @param array<array-key, mixed>|string $content
      */
-    private function writeNode(int $block, array|string $content, int $parentBlock): void
+    private function writeNode(int $block, array|string|UdfSpec $content, int $parentBlock): void
     {
+        $spec = $content instanceof UdfSpec ? $content : null;
+        $content = $spec instanceof UdfSpec ? $spec->data : $content;
         $isDirectory = is_array($content);
         $data = $isDirectory ? $this->directoryData($content, $block, $parentBlock) : $content;
         $length = strlen($data);
@@ -177,8 +179,9 @@ final class UdfBuilder
 
         $extended = $this->options['extended'];
         $entry = self::tag($extended ? 266 : 261, $block);
-        $entry = str_pad($entry, 27, "\0") . chr($isDirectory ? 4 : 5);
+        $entry = str_pad($entry, 27, "\0") . chr($isDirectory ? 4 : ($spec->type ?? 5));
         $entry = str_pad($entry, 34, "\0") . pack('v', $flags);
+        $entry = str_pad($entry, 36, "\0") . pack('V', $spec->uid ?? 0) . pack('V', $spec->gid ?? 0) . pack('V', $spec->permissions ?? 0);
         $entry = str_pad($entry, 56, "\0") . pack('P', $length);
         $entry = str_pad($entry, $extended ? 92 : 84, "\0") . self::timestamp();
         $entry = str_pad($entry, $extended ? 208 : 168, "\0") . pack('V', 0) . pack('V', strlen($descriptors));
@@ -272,7 +275,7 @@ final class UdfBuilder
         }
 
         foreach ($children as $name => $content) {
-            if (! is_array($content) && ! is_string($content)) {
+            if (! is_array($content) && ! is_string($content) && ! $content instanceof UdfSpec) {
                 continue;
             }
 

@@ -154,7 +154,6 @@ abstract class Volume extends Descriptor implements FileSystem
             return;
         }
 
-        $supplementary = $this->jolietLevel > 0;
         $visited = [$this->rootDirectory->location => true];
         $skip = 0;
 
@@ -165,78 +164,148 @@ abstract class Volume extends Descriptor implements FileSystem
         while ($stack !== []) {
             [$base, $location, $length, $depth] = array_pop($stack);
 
-            $records = FileDirectory::loadExtentsSt($isoFile, $this->blockSize, $location, $supplementary, $this->jolietLevel, $length);
-            if ($records === false) {
-                continue;
-            }
-
             $subDirectories = [];
-            $pending = null;
-            foreach ($records as $record) {
-                // the SP entry of the first record of the root directory tells how many bytes to skip in every system use area
-                if ($depth === 0 && $base === '' && $record->isThis()) {
-                    $skip = RockRidge::detectSkip($record->systemUse) ?? 0;
+            foreach ($this->directoryEntries($isoFile, $base, $location, $length, $rockRidge, $depth === 0 && $base === '', $skip) as [$entry, $subLocation, $subLength]) {
+                yield $entry;
+
+                if ($subLocation !== null && $depth < $maxDepth && ! isset($visited[$subLocation])) {
+                    $visited[$subLocation] = true;
+                    $subDirectories[] = [$entry->path, $subLocation, $subLength, $depth + 1];
                 }
-
-                if ($record->isThis() || $record->isParent()) {
-                    continue;
-                }
-
-                // associated files (e.g. resource forks) share the name of their data file
-                if ($record->isAssociated()) {
-                    continue;
-                }
-
-                $rr = ($supplementary || ! $rockRidge) ? null : RockRidge::parse($record->systemUse, $isoFile, $this->blockSize, $skip);
-
-                // the real directory is listed through its "child link" placeholder
-                if ($rr instanceof RockRidgeInfo && $rr->relocated) {
-                    continue;
-                }
-
-                $rrName = $rr instanceof RockRidgeInfo ? $rr->name : null;
-                $name = ($rrName !== null && $rrName !== '') ? $rrName : $record->fileId;
-                $path = $base . '/' . $name;
-
-                // a multi-extent file is stored as several records (all but the last flagged), report it once
-                if (! $record->isDirectory() && ($record->isMultiExtent() || $pending !== null)) {
-                    if ($pending !== null && $pending->name !== $name) {
-                        yield $pending;
-                        $pending = null;
-                    }
-
-                    $pending = $this->appendExtent($pending, $path, $record, $name, $rr);
-
-                    if (! $record->isMultiExtent()) {
-                        yield $pending;
-                        $pending = null;
-                    }
-
-                    continue;
-                }
-
-                $link = $rr?->childLocation;
-                $isDirectory = $record->isDirectory() || $link !== null;
-                $location = $link ?? $record->location;
-                // the data of a file starts after its extended attribute record
-                $dataLocation = $isDirectory ? $location : $this->dataLocation($record);
-
-                yield new IsoEntry($path, $name, $isDirectory, $link === null ? $record->dataLength : 0, $dataLocation, $record->recordingDate, $record->isHidden(), [], $rr);
-
-                if ($isDirectory && $depth < $maxDepth && ! isset($visited[$location])) {
-                    $visited[$location] = true;
-                    $subDirectories[] = [$path, $location, $link === null ? $record->dataLength : null, $depth + 1];
-                }
-            }
-
-            if ($pending !== null) {
-                yield $pending;
             }
 
             // keep alphabetical-ish disk order by pushing in reverse
             foreach (array_reverse($subDirectories) as $sub) {
                 $stack[] = $sub;
             }
+        }
+    }
+
+    /**
+     * List the direct children of one directory (the root directory when $directory is null)
+     *
+     * Same entries as walk() reports for that directory (Rock Ridge names, multi-extent files, ...).
+     *
+     * @return \Generator<int, IsoEntry>
+     */
+    public function listDirectory(IsoFile $isoFile, ?IsoEntry $directory = null, bool $rockRidge = true): \Generator
+    {
+        if ($this->blockSize <= 0) {
+            return;
+        }
+
+        if (! $directory instanceof IsoEntry) {
+            $skip = 0;
+            foreach ($this->directoryEntries($isoFile, '', $this->rootDirectory->location, $this->rootDirectory->dataLength, $rockRidge, true, $skip) as [$entry]) {
+                yield $entry;
+            }
+
+            return;
+        }
+
+        if (! $directory->isDirectory) {
+            return;
+        }
+
+        // the SP entry lives in the root directory only
+        $skip = 0;
+        if ($rockRidge) {
+            foreach ($this->directoryEntries($isoFile, '', $this->rootDirectory->location, $this->rootDirectory->dataLength, true, true, $skip) as $ignored) {
+                break;
+            }
+        }
+
+        // a directory reached through a Rock Ridge child link has no length of its own (size 0)
+        $length = $directory->size > 0 ? $directory->size : null;
+        foreach ($this->directoryEntries($isoFile, $directory->path, $directory->location, $length, $rockRidge, false, $skip) as [$entry]) {
+            yield $entry;
+        }
+    }
+
+    /**
+     * The absolute byte ranges (offset, length) holding the data of a file entry
+     *
+     * @return list<array{int, int}>
+     */
+    public function getEntryRanges(IsoFile $isoFile, IsoEntry $entry): array
+    {
+        return array_map(fn (array $extent): array => [$extent[0] * $this->blockSize, $extent[1]], $entry->getExtents());
+    }
+
+    /**
+     * The entries of a single directory
+     *
+     * @param int|null $length size of the directory, null to read it from the directory itself
+     * @param bool $isRoot the directory is the root one: its first record tells how many bytes to skip in every system use area
+     * @param int $skip system use skip length (SP entry), updated when $isRoot
+     *
+     * @return \Generator<int, array{IsoEntry, int|null, int|null}> the entry, and for a directory its location and length
+     */
+    private function directoryEntries(IsoFile $isoFile, string $base, int $location, ?int $length, bool $rockRidge, bool $isRoot, int &$skip): \Generator
+    {
+        $supplementary = $this->jolietLevel > 0;
+        $records = FileDirectory::loadExtentsSt($isoFile, $this->blockSize, $location, $supplementary, $this->jolietLevel, $length);
+        if ($records === false) {
+            return;
+        }
+
+        $pending = null;
+        foreach ($records as $record) {
+            // the SP entry of the first record of the root directory tells how many bytes to skip in every system use area
+            if ($isRoot && $record->isThis()) {
+                $skip = RockRidge::detectSkip($record->systemUse) ?? 0;
+            }
+
+            if ($record->isThis() || $record->isParent()) {
+                continue;
+            }
+
+            // associated files (e.g. resource forks) share the name of their data file
+            if ($record->isAssociated()) {
+                continue;
+            }
+
+            $rr = ($supplementary || ! $rockRidge) ? null : RockRidge::parse($record->systemUse, $isoFile, $this->blockSize, $skip);
+
+            // the real directory is listed through its "child link" placeholder
+            if ($rr instanceof RockRidgeInfo && $rr->relocated) {
+                continue;
+            }
+
+            $rrName = $rr instanceof RockRidgeInfo ? $rr->name : null;
+            $name = ($rrName !== null && $rrName !== '') ? $rrName : $record->fileId;
+            $path = $base . '/' . $name;
+
+            // a multi-extent file is stored as several records (all but the last flagged), report it once
+            if (! $record->isDirectory() && ($record->isMultiExtent() || $pending !== null)) {
+                if ($pending !== null && $pending->name !== $name) {
+                    yield [$pending, null, null];
+                    $pending = null;
+                }
+
+                $pending = $this->appendExtent($pending, $path, $record, $name, $rr);
+
+                if (! $record->isMultiExtent()) {
+                    yield [$pending, null, null];
+                    $pending = null;
+                }
+
+                continue;
+            }
+
+            $link = $rr?->childLocation;
+            $isDirectory = $record->isDirectory() || $link !== null;
+            $entryLocation = $link ?? $record->location;
+            // the data of a file starts after its extended attribute record
+            $dataLocation = $isDirectory ? $entryLocation : $this->dataLocation($record);
+
+            $entry = new IsoEntry($path, $name, $isDirectory, $link === null ? $record->dataLength : 0, $dataLocation, $record->recordingDate, $record->isHidden(), [], $rr, null, $rr?->uid, $rr?->gid, $rr?->mode);
+
+            yield [$entry, $isDirectory ? $entryLocation : null, $link === null ? $record->dataLength : null];
+        }
+
+        if ($pending !== null) {
+            yield [$pending, null, null];
         }
     }
 
@@ -248,13 +317,13 @@ abstract class Volume extends Descriptor implements FileSystem
         $location = $this->dataLocation($record);
 
         if (! $pending instanceof IsoEntry) {
-            return new IsoEntry($path, $name ?? $record->fileId, false, $record->dataLength, $location, $record->recordingDate, $record->isHidden(), [[$location, $record->dataLength]], $rr);
+            return new IsoEntry($path, $name ?? $record->fileId, false, $record->dataLength, $location, $record->recordingDate, $record->isHidden(), [[$location, $record->dataLength]], $rr, null, $rr?->uid, $rr?->gid, $rr?->mode);
         }
 
         $extents = $pending->extents;
         $extents[] = [$location, $record->dataLength];
 
-        return new IsoEntry($pending->path, $pending->name, false, $pending->size + $record->dataLength, $pending->location, $pending->recordingDate, $pending->isHidden, $extents, $pending->rockRidge ?? $rr);
+        return new IsoEntry($pending->path, $pending->name, false, $pending->size + $record->dataLength, $pending->location, $pending->recordingDate, $pending->isHidden, $extents, $pending->rockRidge ?? $rr, null, $pending->uid ?? $rr?->uid, $pending->gid ?? $rr?->gid, $pending->mode ?? $rr?->mode);
     }
 
     /**

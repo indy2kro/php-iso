@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PhpIso;
 
 use Generator;
+use PhpIso\Util\EntryStream;
 
 /**
  * Lookup and read helpers shared by the file systems, built on top of walk() and copyEntryTo()
@@ -16,20 +17,39 @@ trait BrowsesEntries
      */
     public function find(IsoFile $isoFile, string $path): ?IsoEntry
     {
-        $wanted = '/' . trim(str_replace('\\', '/', $path), '/');
-        $insensitive = null;
+        $current = null;
 
-        foreach ($this->walk($isoFile) as $entry) {
-            if ($entry->path === $wanted) {
-                return $entry;
+        // descend one component at a time: only the directories on the path are read
+        $parts = array_values(array_filter(explode('/', str_replace('\\', '/', $path)), static fn (string $part): bool => $part !== ''));
+        if ($parts === []) {
+            return null;
+        }
+
+        foreach ($parts as $part) {
+            if ($current instanceof IsoEntry && ! $current->isDirectory) {
+                return null;
             }
 
-            if ($insensitive === null && strcasecmp($entry->path, $wanted) === 0) {
-                $insensitive = $entry;
+            $exact = null;
+            $insensitive = null;
+            foreach ($this->listDirectory($isoFile, $current) as $child) {
+                if ($child->name === $part) {
+                    $exact = $child;
+                    break;
+                }
+
+                if ($insensitive === null && strcasecmp($child->name, $part) === 0) {
+                    $insensitive = $child;
+                }
+            }
+
+            $current = $exact ?? $insensitive;
+            if (! $current instanceof IsoEntry) {
+                return null;
             }
         }
 
-        return $insensitive;
+        return $current;
     }
 
     /**
@@ -57,7 +77,7 @@ trait BrowsesEntries
     }
 
     /**
-     * Open the content of a file entry as a readable stream (memory first, temporary file for big files)
+     * Open the content of a file entry as a readable, seekable stream, read from the image on demand
      *
      * @return resource
      *
@@ -65,16 +85,11 @@ trait BrowsesEntries
      */
     public function openStream(IsoFile $isoFile, IsoEntry $entry): mixed
     {
-        $stream = fopen('php://temp', 'w+b');
-
-        if ($stream === false) {
-            throw new Exception('Failed to open a temporary stream');
+        if ($entry->isDirectory) {
+            throw new Exception('Cannot read the content of a directory: ' . $entry->path);
         }
 
-        $this->copyEntryTo($isoFile, $entry, $stream);
-        rewind($stream);
-
-        return $stream;
+        return EntryStream::open($isoFile, $this->getEntryRanges($isoFile, $entry));
     }
 
     /**
