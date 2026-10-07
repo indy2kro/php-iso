@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PhpIso\Test\Cli;
 
 use PhpIso\Cli\IsoTool;
+use PhpIso\Test\Support\Streams;
 use PHPUnit\Framework\TestCase;
 
 final class IsoToolTest extends TestCase
@@ -19,9 +20,23 @@ final class IsoToolTest extends TestCase
     private function runTool(array $args): array
     {
         ob_start();
-        $code = (new IsoTool())->run($args);
+        $code = (new IsoTool(errorOutput: Streams::memory()))->run($args);
 
         return [$code, (string) ob_get_clean()];
+    }
+
+    public function testErrorsGoToTheGivenErrorOutput(): void
+    {
+        $errors = Streams::memory();
+
+        ob_start();
+        $code = (new IsoTool(errorOutput: $errors))->run(['--bogus']);
+        $output = (string) ob_get_clean();
+
+        rewind($errors);
+        $this->assertSame(IsoTool::EXIT_USAGE, $code);
+        $this->assertSame('', $output);
+        $this->assertSame('ERROR: Unknown option: --bogus' . PHP_EOL, stream_get_contents($errors));
     }
 
     public function testHelpExitsWithSuccess(): void
