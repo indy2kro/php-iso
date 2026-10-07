@@ -14,6 +14,7 @@ use PhpIso\IsoEntry;
 use PhpIso\IsoFile;
 use PhpIso\PathTableRecord;
 use PhpIso\RockRidgeInfo;
+use PhpIso\WalkWarnings;
 use PhpIso\Util\Buffer;
 use PhpIso\Util\IsoDate;
 
@@ -146,9 +147,12 @@ abstract class Volume extends Descriptor implements FileSystem
      * On a primary volume the Rock Ridge extensions (long POSIX names, mode, owner, symbolic links, relocated
      * directories) are applied unless $rockRidge is false.
      *
+     * Directories that cannot be listed completely (depth limit, unreadable, truncated or corrupt) are recorded in
+     * $warnings, or make a strict WalkWarnings throw.
+     *
      * @return \Generator<int, IsoEntry>
      */
-    public function walk(IsoFile $isoFile, int $maxDepth = 64, bool $rockRidge = true): \Generator
+    public function walk(IsoFile $isoFile, int $maxDepth = 64, ?WalkWarnings $warnings = null, bool $rockRidge = true): \Generator
     {
         if ($this->blockSize <= 0) {
             return;
@@ -165,13 +169,20 @@ abstract class Volume extends Descriptor implements FileSystem
             [$base, $location, $length, $depth] = array_pop($stack);
 
             $subDirectories = [];
-            foreach ($this->directoryEntries($isoFile, $base, $location, $length, $rockRidge, $depth === 0 && $base === '', $skip) as [$entry, $subLocation, $subLength]) {
+            foreach ($this->directoryEntries($isoFile, $base, $location, $length, $rockRidge, $depth === 0 && $base === '', $skip, $warnings) as [$entry, $subLocation, $subLength]) {
                 yield $entry;
 
-                if ($subLocation !== null && $depth < $maxDepth && ! isset($visited[$subLocation])) {
-                    $visited[$subLocation] = true;
-                    $subDirectories[] = [$entry->path, $subLocation, $subLength, $depth + 1];
+                if ($subLocation === null || isset($visited[$subLocation])) {
+                    continue;
                 }
+
+                if ($depth >= $maxDepth) {
+                    $warnings?->add('depth limit (' . $maxDepth . ') reached, not listing ' . $entry->path);
+                    continue;
+                }
+
+                $visited[$subLocation] = true;
+                $subDirectories[] = [$entry->path, $subLocation, $subLength, $depth + 1];
             }
 
             // keep alphabetical-ish disk order by pushing in reverse
@@ -188,7 +199,7 @@ abstract class Volume extends Descriptor implements FileSystem
      *
      * @return \Generator<int, IsoEntry>
      */
-    public function listDirectory(IsoFile $isoFile, ?IsoEntry $directory = null, bool $rockRidge = true): \Generator
+    public function listDirectory(IsoFile $isoFile, ?IsoEntry $directory = null, ?WalkWarnings $warnings = null, bool $rockRidge = true): \Generator
     {
         if ($this->blockSize <= 0) {
             return;
@@ -196,7 +207,7 @@ abstract class Volume extends Descriptor implements FileSystem
 
         if (! $directory instanceof IsoEntry) {
             $skip = 0;
-            foreach ($this->directoryEntries($isoFile, '', $this->rootDirectory->location, $this->rootDirectory->dataLength, $rockRidge, true, $skip) as [$entry]) {
+            foreach ($this->directoryEntries($isoFile, '', $this->rootDirectory->location, $this->rootDirectory->dataLength, $rockRidge, true, $skip, $warnings) as [$entry]) {
                 yield $entry;
             }
 
@@ -217,7 +228,7 @@ abstract class Volume extends Descriptor implements FileSystem
 
         // a directory reached through a Rock Ridge child link has no length of its own (size 0)
         $length = $directory->size > 0 ? $directory->size : null;
-        foreach ($this->directoryEntries($isoFile, $directory->path, $directory->location, $length, $rockRidge, false, $skip) as [$entry]) {
+        foreach ($this->directoryEntries($isoFile, $directory->path, $directory->location, $length, $rockRidge, false, $skip, $warnings) as [$entry]) {
             yield $entry;
         }
     }
@@ -238,13 +249,14 @@ abstract class Volume extends Descriptor implements FileSystem
      * @param int|null $length size of the directory, null to read it from the directory itself
      * @param bool $isRoot the directory is the root one: its first record tells how many bytes to skip in every system use area
      * @param int $skip system use skip length (SP entry), updated when $isRoot
+     * @param WalkWarnings|null $warnings receives the problems met while reading the directory
      *
      * @return \Generator<int, array{IsoEntry, int|null, int|null}> the entry, and for a directory its location and length
      */
-    private function directoryEntries(IsoFile $isoFile, string $base, int $location, ?int $length, bool $rockRidge, bool $isRoot, int &$skip): \Generator
+    private function directoryEntries(IsoFile $isoFile, string $base, int $location, ?int $length, bool $rockRidge, bool $isRoot, int &$skip, ?WalkWarnings $warnings = null): \Generator
     {
         $supplementary = $this->jolietLevel > 0;
-        $records = FileDirectory::loadExtentsSt($isoFile, $this->blockSize, $location, $supplementary, $this->jolietLevel, $length);
+        $records = FileDirectory::loadExtentsSt($isoFile, $this->blockSize, $location, $supplementary, $this->jolietLevel, $length, $warnings, $base);
         if ($records === false) {
             return;
         }

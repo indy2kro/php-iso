@@ -414,7 +414,7 @@ class IsoFile
                 $descriptor = $reader->read();
 
                 if ($descriptor === null) {
-                    throw new Exception('Finished reading');
+                    throw new Exception('The volume descriptors cannot be read: the image ends before the descriptor terminator');
                 }
 
                 if (isset($descriptors[$descriptor->getType()]) && ! ($descriptor instanceof UdfDescriptor)) {
@@ -442,10 +442,7 @@ class IsoFile
             }
 
             if ($descriptor->getType() === Type::TERMINATOR_DESC) {
-                if ($foundTerminator) {
-                    break;
-                }
-
+                // a second terminator already ended the loop above
                 $foundTerminator = true;
                 // Keep going if UDF might still be present
                 continue;

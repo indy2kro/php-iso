@@ -50,6 +50,20 @@ final class IsoDateTest extends TestCase
         $this->assertSame(17, $offset);
     }
 
+    public function testInit17WithFloatNotationDigitsIsNotAWarning(): void
+    {
+        // found by the fuzzer: "2e24" is a float string, casting it to int is deprecated
+        foreach (['2e24012300000000', '1e100101000000000', '0x1F0101000000000', '    0101000000000'] as $text) {
+            $buffer = array_map(ord(...), str_split(str_pad($text, 16, '0')));
+            $offset = 0;
+
+            // the date itself does not matter, the conversion must not raise a warning or a deprecation
+            IsoDate::init17($buffer, $offset);
+
+            $this->assertSame(17, $offset);
+        }
+    }
+
     public function testInit17InvalidDate(): void
     {
         $buffer = array_map(ord(...), str_split('0000000000000000')); // Invalid date

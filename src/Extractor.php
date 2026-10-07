@@ -36,12 +36,13 @@ class Extractor
 
     /**
      * @param callable(IsoEntry): void|null $onFile called before each file is extracted
+     * @param WalkWarnings|null $warnings receives what was skipped because the listing is incomplete
      *
      * @return int number of files extracted
      *
      * @throws Exception
      */
-    public function extract(IsoFile $isoFile, FileSystem $volume, string $destinationDir, ?callable $onFile = null): int
+    public function extract(IsoFile $isoFile, FileSystem $volume, string $destinationDir, ?callable $onFile = null, ?WalkWarnings $warnings = null): int
     {
         $this->errors = [];
 
@@ -53,7 +54,7 @@ class Extractor
         /** @var list<array{string, IsoEntry}> $directories */
         $directories = [];
 
-        foreach ($volume->walk($isoFile) as $entry) {
+        foreach ($volume->walk($isoFile, 64, $warnings) as $entry) {
             try {
                 $target = SafePath::join($destinationDir, $entry->path);
 

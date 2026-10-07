@@ -15,7 +15,7 @@ trait BrowsesEntries
     /**
      * Find an entry by its path (exact match first, then case insensitive: ISO 9660 names are usually upper case)
      */
-    public function find(IsoFile $isoFile, string $path): ?IsoEntry
+    public function find(IsoFile $isoFile, string $path, ?WalkWarnings $warnings = null): ?IsoEntry
     {
         $current = null;
 
@@ -32,7 +32,7 @@ trait BrowsesEntries
 
             $exact = null;
             $insensitive = null;
-            foreach ($this->listDirectory($isoFile, $current) as $child) {
+            foreach ($this->listDirectory($isoFile, $current, $warnings) as $child) {
                 if ($child->name === $part) {
                     $exact = $child;
                     break;
@@ -60,12 +60,12 @@ trait BrowsesEntries
      *
      * @return Generator<int, IsoEntry>
      */
-    public function search(IsoFile $isoFile, string $pattern): Generator
+    public function search(IsoFile $isoFile, string $pattern, ?WalkWarnings $warnings = null): Generator
     {
         $byPath = str_contains($pattern, '/');
         $pattern = $byPath ? '/' . ltrim($pattern, '/') : $pattern;
 
-        foreach ($this->walk($isoFile) as $entry) {
+        foreach ($this->walk($isoFile, 64, $warnings) as $entry) {
             $matches = $byPath
                 ? fnmatch($pattern, '/' . ltrim($entry->path, '/'), FNM_CASEFOLD | FNM_PATHNAME)
                 : fnmatch($pattern, $entry->name, FNM_CASEFOLD);

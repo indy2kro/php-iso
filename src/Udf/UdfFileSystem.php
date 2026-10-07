@@ -11,6 +11,7 @@ use PhpIso\FileSystem;
 use PhpIso\IsoEntry;
 use PhpIso\IsoFile;
 use PhpIso\Util\IsoDate;
+use PhpIso\WalkWarnings;
 
 /**
  * Read only access to the UDF file system of an image (ECMA-167 / OSTA UDF, 2048 bytes blocks,
@@ -174,15 +175,10 @@ final readonly class UdfFileSystem implements FileSystem
         throw new Exception('UDF file set descriptor not found');
     }
 
-    public function walk(IsoFile $isoFile, int $maxDepth = 64): Generator
+    public function walk(IsoFile $isoFile, int $maxDepth = 64, ?WalkWarnings $warnings = null): Generator
     {
-        try {
-            $root = $this->readNode($isoFile, $this->rootPartition, $this->rootBlock);
-        } catch (Exception) {
-            return;
-        }
-
-        if (! $root instanceof UdfNode || ! $root->isDirectory) {
+        $root = $this->readRoot($isoFile, $warnings);
+        if (! $root instanceof UdfNode) {
             return;
         }
 
@@ -195,13 +191,20 @@ final readonly class UdfFileSystem implements FileSystem
             [$base, $directory, $depth] = array_pop($stack);
 
             $subDirectories = [];
-            foreach ($this->directoryEntries($isoFile, $base, $directory) as [$entry, $node, $key]) {
+            foreach ($this->directoryEntries($isoFile, $base, $directory, $warnings) as [$entry, $node, $key]) {
                 yield $entry;
 
-                if ($node->isDirectory && $depth < $maxDepth && ! isset($visited[$key])) {
-                    $visited[$key] = true;
-                    $subDirectories[] = [$entry->path, $node, $depth + 1];
+                if (! $node->isDirectory || isset($visited[$key])) {
+                    continue;
                 }
+
+                if ($depth >= $maxDepth) {
+                    $warnings?->add('depth limit (' . $maxDepth . ') reached, not listing ' . $entry->path);
+                    continue;
+                }
+
+                $visited[$key] = true;
+                $subDirectories[] = [$entry->path, $node, $depth + 1];
             }
 
             foreach (array_reverse($subDirectories) as $sub) {
@@ -210,16 +213,33 @@ final readonly class UdfFileSystem implements FileSystem
         }
     }
 
-    public function listDirectory(IsoFile $isoFile, ?IsoEntry $directory = null): Generator
+    /**
+     * The root directory node, null (with a warning) when it cannot be read
+     */
+    private function readRoot(IsoFile $isoFile, ?WalkWarnings $warnings): ?UdfNode
+    {
+        try {
+            $root = $this->readNode($isoFile, $this->rootPartition, $this->rootBlock);
+        } catch (Exception $exception) {
+            $warnings?->add('UDF root directory cannot be read (partition ' . $this->rootPartition . ', block ' . $this->rootBlock . '): ' . $exception->getMessage());
+
+            return null;
+        }
+
+        if (! $root instanceof UdfNode || ! $root->isDirectory) {
+            $warnings?->add('UDF root directory not found (partition ' . $this->rootPartition . ', block ' . $this->rootBlock . ')');
+
+            return null;
+        }
+
+        return $root;
+    }
+
+    public function listDirectory(IsoFile $isoFile, ?IsoEntry $directory = null, ?WalkWarnings $warnings = null): Generator
     {
         if (! $directory instanceof IsoEntry) {
-            try {
-                $node = $this->readNode($isoFile, $this->rootPartition, $this->rootBlock);
-            } catch (Exception) {
-                return;
-            }
-
-            if (! $node instanceof UdfNode || ! $node->isDirectory) {
+            $node = $this->readRoot($isoFile, $warnings);
+            if (! $node instanceof UdfNode) {
                 return;
             }
 
@@ -231,7 +251,7 @@ final readonly class UdfFileSystem implements FileSystem
             return;
         }
 
-        foreach ($this->directoryEntries($isoFile, $base, $node) as [$entry]) {
+        foreach ($this->directoryEntries($isoFile, $base, $node, $warnings) as [$entry]) {
             yield $entry;
         }
     }
@@ -249,18 +269,24 @@ final readonly class UdfFileSystem implements FileSystem
      *
      * @return Generator<int, array{IsoEntry, UdfNode, string}> the entry, its node and the partition:block key of the node
      */
-    private function directoryEntries(IsoFile $isoFile, string $base, UdfNode $directory): Generator
+    private function directoryEntries(IsoFile $isoFile, string $base, UdfNode $directory, ?WalkWarnings $warnings = null): Generator
     {
-        foreach ($this->readDirectory($isoFile, $directory) as [$name, $hidden, $partition, $block]) {
+        foreach ($this->readDirectory($isoFile, $directory, $base, $warnings) as [$name, $hidden, $partition, $block]) {
             // a corrupt or unsupported entry is skipped, the rest of the tree stays readable
             try {
                 $node = $this->readNode($isoFile, $partition, $block);
-            } catch (Exception) {
+            } catch (Exception $exception) {
+                $warnings?->add('UDF entry ' . $base . '/' . $name . ' skipped (partition ' . $partition . ', block ' . $block . '): ' . $exception->getMessage());
+                continue;
+            }
+
+            if (! $node instanceof UdfNode) {
+                $warnings?->add('UDF entry ' . $base . '/' . $name . ' skipped, no file entry at partition ' . $partition . ', block ' . $block);
                 continue;
             }
 
             // devices, FIFOs and sockets carry no data: skipped rather than reported as empty or bogus files
-            if (! $node instanceof UdfNode || $node->isSpecial()) {
+            if ($node->isSpecial()) {
                 continue;
             }
 
@@ -558,9 +584,11 @@ final readonly class UdfFileSystem implements FileSystem
     /**
      * @return Generator<int, array{string, bool, int, int}> name, hidden, partition reference and block of the entry
      */
-    private function readDirectory(IsoFile $isoFile, UdfNode $directory): Generator
+    private function readDirectory(IsoFile $isoFile, UdfNode $directory, string $base = '', ?WalkWarnings $warnings = null): Generator
     {
         if ($directory->size > IsoFile::MAX_READ_LENGTH) {
+            $warnings?->add('UDF directory too large to be read: ' . ($base === '' ? '/' : $base));
+
             return;
         }
 
@@ -574,7 +602,9 @@ final readonly class UdfFileSystem implements FileSystem
             $this->copyEntryTo($isoFile, $entry, $stream);
             rewind($stream);
             $data = (string) stream_get_contents($stream);
-        } catch (Exception) {
+        } catch (Exception $exception) {
+            $warnings?->add('UDF directory cannot be read: ' . ($base === '' ? '/' : $base) . ' (' . $exception->getMessage() . ')');
+
             return;
         } finally {
             fclose($stream);
@@ -590,6 +620,7 @@ final readonly class UdfFileSystem implements FileSystem
             $total -= $pos;
 
             if ($pos + 38 + $implementationLength + $nameLength > $length) {
+                $warnings?->add('UDF directory ends with a truncated entry at offset ' . $pos . ': ' . ($base === '' ? '/' : $base));
                 break;
             }
 

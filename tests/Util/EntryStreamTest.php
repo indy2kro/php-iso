@@ -147,4 +147,82 @@ final class EntryStreamTest extends TestCase
 
         $volume->openStream($isoFile, $entry);
     }
+
+    public function testStreamWithoutItsContextCannotBeOpened(): void
+    {
+        // make sure the wrapper is registered
+        $isoFile = $this->open(IsoTree::build(['A.TXT' => 'x'])->build());
+        fclose(EntryStream::open($isoFile, [[0, 1]]));
+
+        $this->assertFalse(@fopen(EntryStream::SCHEME . '://entry', 'rb'));
+    }
+
+    public function testStreamWithMalformedRangesCannotBeOpened(): void
+    {
+        $isoFile = $this->open(IsoTree::build(['A.TXT' => 'x'])->build());
+        fclose(EntryStream::open($isoFile, [[0, 1]]));
+
+        $context = stream_context_create([EntryStream::SCHEME => ['file' => $isoFile, 'ranges' => [['a', 'b']]]]);
+
+        $this->assertFalse(@fopen(EntryStream::SCHEME . '://entry', 'rb', false, $context));
+    }
+
+    public function testReadingAClosedImageFails(): void
+    {
+        $isoFile = $this->open(IsoTree::build(['A.TXT' => 'hello'])->build());
+        $stream = $this->stream($isoFile, '/A.TXT');
+        $isoFile->closeFile();
+
+        $this->assertSame('', (string) @fread($stream, 5));
+        fclose($stream);
+    }
+
+    public function testReadStopsAtAFailureAndKeepsWhatWasRead(): void
+    {
+        $content = str_repeat('a', 2048) . str_repeat('b', 2048);
+        $path = tempnam(sys_get_temp_dir(), 'pes');
+        $this->assertNotFalse($path);
+        file_put_contents($path, IsoTree::build(['A.BIN' => $content])->build());
+        $this->cleanup[] = $path;
+
+        // a read that works once, then fails
+        $isoFile = new class ($path) extends IsoFile {
+            public int $reads = 0;
+
+            public int $allowed = 1000;
+
+            public function read(int $length): string|false
+            {
+                return ++$this->reads > $this->allowed ? false : parent::read($length);
+            }
+        };
+
+        $volume = $isoFile->getPreferredVolume();
+        $this->assertInstanceOf(\PhpIso\Descriptor\Volume::class, $volume);
+        $entry = $volume->find($isoFile, '/A.BIN');
+        $this->assertInstanceOf(IsoEntry::class, $entry);
+
+        $stream = $volume->openStream($isoFile, $entry);
+        $isoFile->reads = 0;
+        $isoFile->allowed = 1;
+        // PHP reads in blocks of 8192 bytes: the first call returns the 4096 bytes, the failure is reported next
+        $first = fread($stream, 8192);
+        $this->assertSame($content, $first);
+        $this->assertSame('', (string) @fread($stream, 10));
+        fclose($stream);
+    }
+
+    public function testSeekWithAnUnknownOriginIsRefused(): void
+    {
+        $this->assertFalse((new EntryStream())->stream_seek(0, 99));
+    }
+
+    public function testStreamOptionsAreNotSupported(): void
+    {
+        $isoFile = $this->open(IsoTree::build(['A.TXT' => 'hello'])->build());
+        $stream = $this->stream($isoFile, '/A.TXT');
+
+        $this->assertFalse(@stream_set_blocking($stream, true));
+        fclose($stream);
+    }
 }

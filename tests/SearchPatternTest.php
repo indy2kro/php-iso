@@ -45,12 +45,12 @@ final class SearchPatternTest extends TestCase
             {
             }
 
-            public function walk(IsoFile $isoFile, int $maxDepth = 64): \Generator
+            public function walk(IsoFile $isoFile, int $maxDepth = 64, ?\PhpIso\WalkWarnings $warnings = null): \Generator
             {
                 yield from $this->entries;
             }
 
-            public function listDirectory(IsoFile $isoFile, ?IsoEntry $directory = null): \Generator
+            public function listDirectory(IsoFile $isoFile, ?IsoEntry $directory = null, ?\PhpIso\WalkWarnings $warnings = null): \Generator
             {
                 yield from [];
             }

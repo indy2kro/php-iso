@@ -65,7 +65,7 @@ final class RockRidgeTest extends TestCase
         $this->assertInstanceOf(Volume::class, $volume);
 
         $entries = [];
-        foreach ($volume->walk($isoFile, 64, $rockRidge) as $entry) {
+        foreach ($volume->walk($isoFile, 64, null, $rockRidge) as $entry) {
             $entries[$entry->path] = $entry;
         }
 
