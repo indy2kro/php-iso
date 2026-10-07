@@ -8,6 +8,11 @@ Changes marked **BREAKING** are described with before / after snippets in [UPGRA
 
 ## [Unreleased]
 
+### Added
+
+- End to end smoke tests (`tests/smoke/run.sh`, `composer run smoke`) run on Linux, Windows (also through `bin/isotool.bat`) and macOS: every fixture through every CLI action, expected outputs, exit codes, standard input, binary safe `--cat`, paths with spaces and non ASCII characters, damaged images
+- Six generated fixtures (Rock Ridge + Joliet with a 300 file directory, relocated Rock Ridge directories, El Torito with BIOS and EFI entries, pure UDF 2.01 written by the Linux driver, a genisoimage UDF bridge, a pycdlib UDF 2.60 image) and source tree manifests: extractions are checked against the SHA-256 of the files each image was built from
+
 ## [2.0.0] - 2026-10-07
 
 ### Added
