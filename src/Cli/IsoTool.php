@@ -216,7 +216,7 @@ class IsoTool
             } elseif ($entry->isDirectory) {
                 echo $entry->path . '/' . PHP_EOL;
             } else {
-                echo $entry->path . "	" . $entry->size . ($entry->isSymlink() ? "	-> " . $entry->rockRidge?->symlink : "") . PHP_EOL;
+                echo $entry->path . "	" . $entry->size . ($entry->isSymlink() ? "	-> " . $entry->getSymlinkTarget() : "") . PHP_EOL;
             }
         }
     }
@@ -353,6 +353,16 @@ class IsoTool
             public function walk(IsoFile $isoFile, int $maxDepth = 64): Generator
             {
                 return $this->volume->walk($isoFile, $maxDepth, false);
+            }
+
+            public function listDirectory(IsoFile $isoFile, ?IsoEntry $directory = null): Generator
+            {
+                return $this->volume->listDirectory($isoFile, $directory, false);
+            }
+
+            public function getEntryRanges(IsoFile $isoFile, IsoEntry $entry): array
+            {
+                return $this->volume->getEntryRanges($isoFile, $entry);
             }
 
             public function copyEntryTo(IsoFile $isoFile, IsoEntry $entry, mixed $output): void

@@ -50,6 +50,16 @@ final class SearchPatternTest extends TestCase
                 yield from $this->entries;
             }
 
+            public function listDirectory(IsoFile $isoFile, ?IsoEntry $directory = null): \Generator
+            {
+                yield from [];
+            }
+
+            public function getEntryRanges(IsoFile $isoFile, IsoEntry $entry): array
+            {
+                return $entry->getExtents();
+            }
+
             public function copyEntryTo(IsoFile $isoFile, IsoEntry $entry, mixed $output): void
             {
             }

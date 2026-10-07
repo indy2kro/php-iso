@@ -21,6 +21,24 @@ interface FileSystem
     public function walk(IsoFile $isoFile, int $maxDepth = 64): Generator;
 
     /**
+     * List the direct children of one directory (the root directory when $directory is null)
+     *
+     * The entries are the ones walk() reports for that directory.
+     *
+     * @return Generator<int, IsoEntry>
+     */
+    public function listDirectory(IsoFile $isoFile, ?IsoEntry $directory = null): Generator;
+
+    /**
+     * The byte ranges (absolute offset in the image, length) holding the data of a file entry, in order
+     *
+     * A negative offset is a sparse range, read as zeros.
+     *
+     * @return list<array{int, int}>
+     */
+    public function getEntryRanges(IsoFile $isoFile, IsoEntry $entry): array;
+
+    /**
      * Find an entry by its path (exact match first, then case insensitive)
      */
     public function find(IsoFile $isoFile, string $path): ?IsoEntry;

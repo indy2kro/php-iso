@@ -195,27 +195,12 @@ final readonly class UdfFileSystem implements FileSystem
             [$base, $directory, $depth] = array_pop($stack);
 
             $subDirectories = [];
-            foreach ($this->readDirectory($isoFile, $directory) as [$name, $hidden, $partition, $block]) {
-                // a corrupt or unsupported entry is skipped, the rest of the tree stays readable
-                try {
-                    $node = $this->readNode($isoFile, $partition, $block);
-                } catch (Exception) {
-                    continue;
-                }
+            foreach ($this->directoryEntries($isoFile, $base, $directory) as [$entry, $node, $key]) {
+                yield $entry;
 
-                if (! $node instanceof UdfNode) {
-                    continue;
-                }
-
-                $path = $base . '/' . $name;
-                $location = $node->extents[0][0] ?? 0;
-
-                yield new IsoEntry($path, $name, $node->isDirectory, $node->size, max($location, 0), $node->modified, $hidden, $node->extents);
-
-                $key = $partition . ':' . $block;
                 if ($node->isDirectory && $depth < $maxDepth && ! isset($visited[$key])) {
                     $visited[$key] = true;
-                    $subDirectories[] = [$path, $node, $depth + 1];
+                    $subDirectories[] = [$entry->path, $node, $depth + 1];
                 }
             }
 
@@ -223,6 +208,124 @@ final readonly class UdfFileSystem implements FileSystem
                 $stack[] = $sub;
             }
         }
+    }
+
+    public function listDirectory(IsoFile $isoFile, ?IsoEntry $directory = null): Generator
+    {
+        if (! $directory instanceof IsoEntry) {
+            try {
+                $node = $this->readNode($isoFile, $this->rootPartition, $this->rootBlock);
+            } catch (Exception) {
+                return;
+            }
+
+            if (! $node instanceof UdfNode || ! $node->isDirectory) {
+                return;
+            }
+
+            $base = '';
+        } elseif ($directory->isDirectory) {
+            $node = new UdfNode(true, $directory->size, $directory->extents, null);
+            $base = $directory->path;
+        } else {
+            return;
+        }
+
+        foreach ($this->directoryEntries($isoFile, $base, $node) as [$entry]) {
+            yield $entry;
+        }
+    }
+
+    /**
+     * @return list<array{int, int}> absolute byte ranges, a negative offset is a sparse extent (zeros)
+     */
+    public function getEntryRanges(IsoFile $isoFile, IsoEntry $entry): array
+    {
+        return $entry->getExtents();
+    }
+
+    /**
+     * The entries of a single directory: non regular entries (devices, FIFOs, sockets) are not reported
+     *
+     * @return Generator<int, array{IsoEntry, UdfNode, string}> the entry, its node and the partition:block key of the node
+     */
+    private function directoryEntries(IsoFile $isoFile, string $base, UdfNode $directory): Generator
+    {
+        foreach ($this->readDirectory($isoFile, $directory) as [$name, $hidden, $partition, $block]) {
+            // a corrupt or unsupported entry is skipped, the rest of the tree stays readable
+            try {
+                $node = $this->readNode($isoFile, $partition, $block);
+            } catch (Exception) {
+                continue;
+            }
+
+            // devices, FIFOs and sockets carry no data: skipped rather than reported as empty or bogus files
+            if (! $node instanceof UdfNode || $node->isSpecial()) {
+                continue;
+            }
+
+            $location = $node->extents[0][0] ?? 0;
+            $target = $node->isSymlink() ? $this->readSymlinkTarget($isoFile, $node) : null;
+
+            yield [
+                new IsoEntry($base . '/' . $name, $name, $node->isDirectory, $node->size, max($location, 0), $node->modified, $hidden, $node->extents, null, $target, $node->uid, $node->gid, $node->mode),
+                $node,
+                $partition . ':' . $block,
+            ];
+        }
+    }
+
+    /**
+     * Decode the path component records (ECMA-167 4/14.16) stored as the data of a symbolic link
+     *
+     * Component types: 1 and 2 root directory (a type 1 component carrying a name is read as a name, like Linux
+     * does), 3 parent directory, 4 current directory, 5 a name. An unreadable link gives an empty target.
+     */
+    private function readSymlinkTarget(IsoFile $isoFile, UdfNode $node): string
+    {
+        if ($node->size > 65536) {
+            return '';
+        }
+
+        $stream = fopen('php://temp', 'w+b');
+        if ($stream === false) {
+            return '';
+        }
+
+        try {
+            $this->copyEntryTo($isoFile, new IsoEntry('', '', false, $node->size, 0, null, false, $node->extents), $stream);
+            rewind($stream);
+            $data = (string) stream_get_contents($stream);
+        } catch (Exception) {
+            return '';
+        } finally {
+            fclose($stream);
+        }
+
+        $root = false;
+        $parts = [];
+        for ($pos = 0; $pos + 4 <= strlen($data);) {
+            $type = ord($data[$pos]);
+            $length = ord($data[$pos + 1]);
+            $identifier = substr($data, $pos + 4, $length);
+            $pos += 4 + $length;
+
+            if ($type === 1 && $length > 0) {
+                $type = 5;
+            }
+
+            if ($type === 1 || $type === 2) {
+                $root = $parts === [];
+            } elseif ($type === 3) {
+                $parts[] = '..';
+            } elseif ($type === 4) {
+                $parts[] = '.';
+            } elseif ($type === 5 && $length > 0) {
+                $parts[] = self::decodeName($identifier);
+            }
+        }
+
+        return ($root ? '/' : '') . implode('/', $parts);
     }
 
     public function copyEntryTo(IsoFile $isoFile, IsoEntry $entry, mixed $output): void
@@ -351,7 +454,19 @@ final readonly class UdfFileSystem implements FileSystem
         $isDirectory = $fileType === self::FILE_TYPE_DIRECTORY;
         $extents = $this->allocationExtents($isoFile, $data, $adStart, $adLength, $flags & 0x07, $size, $partition, $isDirectory ? $partition : $partition->dataPartition(), $offset);
 
-        return new UdfNode($isDirectory, $size, $extents, $modified);
+        $permissions = self::u32($data, 44);
+        $mode = (($permissions & 7) | ((($permissions >> 5) & 7) << 3) | ((($permissions >> 10) & 7) << 6))
+            | match ($fileType) {
+                self::FILE_TYPE_DIRECTORY => 0040000,
+                12 => 0120000,
+                5 => 0100000,
+                default => 0,
+            };
+        $uid = self::u32($data, 36);
+        $gid = self::u32($data, 40);
+
+        // 0xFFFFFFFF means "not specified"
+        return new UdfNode($isDirectory, $size, $extents, $modified, $fileType, $uid === 0xFFFFFFFF ? null : $uid, $gid === 0xFFFFFFFF ? null : $gid, $mode);
     }
 
     /**

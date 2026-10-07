@@ -19,6 +19,25 @@ final readonly class UdfNode
         public int $size,
         public array $extents,
         public ?CarbonImmutable $modified,
+        /** File entry type (ECMA-167 4/14.6.6): 4 directory, 5 regular file, 12 symbolic link, ... */
+        public int $fileType = 5,
+        public ?int $uid = null,
+        public ?int $gid = null,
+        /** POSIX mode (file type and permission bits) built from the UDF permissions */
+        public ?int $mode = null,
     ) {
+    }
+
+    public function isSymlink(): bool
+    {
+        return $this->fileType === 12;
+    }
+
+    /**
+     * Block and character devices, FIFOs, sockets and terminals: they have no file data to read
+     */
+    public function isSpecial(): bool
+    {
+        return in_array($this->fileType, [6, 7, 9, 10, 11], true);
     }
 }
