@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PhpIso\Descriptor;
 
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use PhpIso\Exception;
 use PhpIso\Util\IsoDate;
 use PhpIso\IsoFile;
@@ -172,7 +172,7 @@ final class RockRidge
     /**
      * Parse the timestamps of a TF entry: creation, modify, access and attributes (null when absent)
      *
-     * @return array<int, Carbon|null>
+     * @return array<int, CarbonImmutable|null>
      */
     private static function timestamps(string $payload): array
     {

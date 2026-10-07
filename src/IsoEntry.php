@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PhpIso;
 
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 
 /**
  * A file or directory found while walking the directory tree of a volume
@@ -17,7 +17,7 @@ final readonly class IsoEntry
         public bool $isDirectory,
         public int $size,
         public int $location,
-        public ?Carbon $recordingDate,
+        public ?CarbonImmutable $recordingDate,
         public bool $isHidden,
         /**
          * Extents (location in blocks, size in bytes) of a multi-extent file, empty for a regular entry

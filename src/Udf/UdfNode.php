@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PhpIso\Udf;
 
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 
 /**
  * The parts of a UDF (extended) file entry needed to browse and read a file or directory
@@ -18,7 +18,7 @@ final readonly class UdfNode
         public bool $isDirectory,
         public int $size,
         public array $extents,
-        public ?Carbon $modified,
+        public ?CarbonImmutable $modified,
     ) {
     }
 }

@@ -10,7 +10,7 @@ use PhpIso\Extractor;
 use PhpIso\FileSystem;
 use PhpIso\IsoEntry;
 use PhpIso\IsoFile;
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use PhpIso\RockRidgeInfo;
 use PHPUnit\Framework\TestCase;
 
@@ -116,7 +116,7 @@ final class ExtractorTest extends TestCase
         };
     }
 
-    private function entry(string $path, bool $isDirectory = false, ?Carbon $date = null, ?RockRidgeInfo $rr = null): IsoEntry
+    private function entry(string $path, bool $isDirectory = false, ?CarbonImmutable $date = null, ?RockRidgeInfo $rr = null): IsoEntry
     {
         return new IsoEntry($path, basename($path), $isDirectory, 7, 0, $date, false, [], $rr);
     }
@@ -128,7 +128,7 @@ final class ExtractorTest extends TestCase
 
     public function testExtractKeepsModificationTimes(): void
     {
-        $date = Carbon::createFromTimestampUTC(981173106);
+        $date = CarbonImmutable::createFromTimestampUTC(981173106);
         $fs = $this->fakeFileSystem([
             $this->entry('/dir', true, $date),
             $this->entry('/dir/a.txt', false, $date),
