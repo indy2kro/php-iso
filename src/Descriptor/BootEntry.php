@@ -26,6 +26,27 @@ final readonly class BootEntry
     ) {
     }
 
+    /**
+     * The media emulation type (one of the MEDIA_* constants)
+     */
+    public function getEmulationType(): int
+    {
+        return $this->mediaType;
+    }
+
+    /**
+     * Size in bytes of the boot image: the emulated floppy size, or the sector count in 512 bytes virtual sectors
+     */
+    public function getImageSize(): int
+    {
+        return match ($this->mediaType) {
+            self::MEDIA_FLOPPY_1_2 => 1228800,
+            self::MEDIA_FLOPPY_1_44 => 1474560,
+            self::MEDIA_FLOPPY_2_88 => 2949120,
+            default => $this->sectorCount * 512,
+        };
+    }
+
     public function getMediaName(): string
     {
         return match ($this->mediaType) {

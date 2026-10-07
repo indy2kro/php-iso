@@ -14,6 +14,7 @@ final readonly class BootCatalog
 {
     private const int ENTRY_SIZE = 32;
     private const int SECTOR_SIZE = 2048;
+    private const int MAX_CATALOG_SECTORS = 16;
 
     /**
      * @param array<int, BootEntry> $entries initial/default entry first, then section entries
@@ -58,7 +59,26 @@ final readonly class BootCatalog
         $manufacturer = trim(substr($validation, 4, 24), "\0 ");
 
         $entries = [];
-        $length = strlen($data);
+        $sectors = 1;
+
+        // a catalog can span several sectors: read the following one when the current data is exhausted
+        $need = static function (int $offset) use ($isoFile, $sector, &$data, &$sectors): bool {
+            while ($offset + self::ENTRY_SIZE > strlen($data)) {
+                if ($sectors >= self::MAX_CATALOG_SECTORS || $isoFile->seek(($sector + $sectors) * self::SECTOR_SIZE, SEEK_SET) === -1) {
+                    return false;
+                }
+
+                $next = $isoFile->read(self::SECTOR_SIZE);
+                if ($next === false || strlen($next) !== self::SECTOR_SIZE) {
+                    return false;
+                }
+
+                $data .= $next;
+                $sectors++;
+            }
+
+            return true;
+        };
 
         // the entry right after the validation entry is the initial/default entry
         $offset = self::ENTRY_SIZE;
@@ -66,7 +86,7 @@ final readonly class BootCatalog
         $offset += self::ENTRY_SIZE;
 
         // section headers: 0x90 (more sections follow) or 0x91 (last section)
-        while ($offset + self::ENTRY_SIZE <= $length) {
+        while ($need($offset)) {
             $indicator = ord($data[$offset]);
 
             if ($indicator !== 0x90 && $indicator !== 0x91) {
@@ -78,12 +98,12 @@ final readonly class BootCatalog
             $count = $unpacked === false ? 0 : $unpacked[1];
             $offset += self::ENTRY_SIZE;
 
-            for ($i = 0; $i < $count && $offset + self::ENTRY_SIZE <= $length; $i++) {
+            for ($i = 0; $i < $count && $need($offset); $i++) {
                 $entries[] = self::parseEntry(substr($data, $offset, self::ENTRY_SIZE), $sectionPlatform);
                 $offset += self::ENTRY_SIZE;
 
                 // skip extension entries (0x44) attached to the entry
-                while ($offset + self::ENTRY_SIZE <= $length && ord($data[$offset]) === 0x44) {
+                while ($need($offset) && ord($data[$offset]) === 0x44) {
                     $offset += self::ENTRY_SIZE;
                 }
             }
@@ -102,6 +122,70 @@ final readonly class BootCatalog
     public function getDefaultEntry(): ?BootEntry
     {
         return $this->entries[0] ?? null;
+    }
+
+    /**
+     * Write the boot image of an entry to a file path or an open stream
+     *
+     * The size of a hard disk image is read from the MBR partition table when it is valid.
+     *
+     * @param resource|string $destination
+     *
+     * @throws Exception when the image is outside of the ISO or cannot be written
+     */
+    public function extractImage(IsoFile $isoFile, BootEntry $entry, mixed $destination): void
+    {
+        $offset = $entry->loadRba * self::SECTOR_SIZE;
+        $length = $entry->getImageSize();
+
+        if ($entry->mediaType === BootEntry::MEDIA_HARD_DISK) {
+            $length = $this->hardDiskSize($isoFile, $offset) ?? $length;
+        }
+
+        if (is_string($destination)) {
+            $handle = fopen($destination, 'wb');
+            if ($handle === false) {
+                throw new Exception('Failed to open file for writing: ' . $destination);
+            }
+
+            try {
+                $isoFile->copyRange($offset, $length, $handle);
+            } finally {
+                fclose($handle);
+            }
+
+            return;
+        }
+
+        $isoFile->copyRange($offset, $length, $destination);
+    }
+
+    /**
+     * Size of a hard disk image from its MBR partition table, null when it cannot be determined
+     */
+    private function hardDiskSize(IsoFile $isoFile, int $offset): ?int
+    {
+        if ($offset + 512 > $isoFile->getSize() || $isoFile->seek($offset, SEEK_SET) === -1) {
+            return null;
+        }
+
+        $mbr = $isoFile->read(512);
+        if ($mbr === false || strlen($mbr) !== 512 || substr($mbr, 510, 2) !== "\x55\xAA") {
+            return null;
+        }
+
+        $end = 0;
+        for ($i = 0; $i < 4; $i++) {
+            /** @var array{type: int, start: int, sectors: int}|false $partition */
+            $partition = unpack('Ctype/x3/Vstart/Vsectors', substr($mbr, 446 + $i * 16 + 4, 12));
+            if ($partition !== false && $partition['type'] !== 0) {
+                $end = max($end, $partition['start'] + $partition['sectors']);
+            }
+        }
+
+        $size = $end * 512;
+
+        return ($size > 0 && $offset + $size <= $isoFile->getSize()) ? $size : null;
     }
 
     private static function parseEntry(string $raw, int $platformId): BootEntry
