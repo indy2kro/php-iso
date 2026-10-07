@@ -47,7 +47,8 @@ class Partition extends Descriptor
         $this->systemID = Buffer::readAString($bytes, 32, $offset);
         $this->volPartitionID = Buffer::readDString($bytes, 32, $offset);
 
-        $this->volPartitionLocation = Buffer::readMSB($bytes, 8, $offset);
-        $this->volPartitionSize = Buffer::readMSB($bytes, 8, $offset);
+        // both byte order 32 bit numbers (ECMA-119 7.3.3)
+        $this->volPartitionLocation = Buffer::readBBO($bytes, 8, $offset);
+        $this->volPartitionSize = Buffer::readBBO($bytes, 8, $offset);
     }
 }

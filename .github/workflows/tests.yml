@@ -73,7 +73,7 @@ jobs:
           run: vendor/bin/phpcs
 
         - name: PHPStan code analysis
-          run: php vendor/bin/phpstan analyze
+          run: php vendor/bin/phpstan analyze --memory-limit=1G
 
         - name: Execute Rector
           run: vendor/bin/rector --dry-run
@@ -114,3 +114,29 @@ jobs:
 
       - name: Run tests
         run: vendor/bin/phpunit --no-coverage
+
+  windows:
+    name: Tests on Windows
+
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: "8.3"
+
+      - name: Install dependencies
+        shell: bash
+        run: composer install --no-progress
+
+      - name: Run tests
+        shell: bash
+        run: vendor/bin/phpunit --no-coverage
+
+      - name: Smoke test the CLI
+        shell: cmd
+        run: bin\isotool.bat -f fixtures/test.iso -l

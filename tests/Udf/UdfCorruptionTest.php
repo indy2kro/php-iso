@@ -250,7 +250,7 @@ final class UdfCorruptionTest extends TestCase
         $entry = $udf->find($isoFile, '/a.txt');
 
         $this->assertInstanceOf(IsoEntry::class, $entry);
-        $this->assertNotInstanceOf(\Carbon\Carbon::class, $entry->recordingDate);
+        $this->assertNotInstanceOf(\Carbon\CarbonImmutable::class, $entry->recordingDate);
     }
 
     public function testSparseExtentsAreReadAsZeros(): void
@@ -262,5 +262,79 @@ final class UdfCorruptionTest extends TestCase
         $this->assertInstanceOf(IsoEntry::class, $entry);
 
         $this->assertSame($content, $udf->readFile($isoFile, $entry));
+    }
+
+    public function testAnchorWithABadChecksumIsIgnored(): void
+    {
+        $builder = UdfBuilder::build(['a.txt' => 'a']);
+        $builder->patch(256, 4, chr((ord("\x02") + 1) & 0xFF));
+
+        $this->assertNull($this->open($builder)->getUdfFileSystem());
+    }
+
+    public function testAnchorWithAWrongLocationIsIgnored(): void
+    {
+        // a descriptor that looks like an anchor but belongs to another sector (a stray 0x0002 tag)
+        $anchor = UdfBuilder::tag(2, 300) . str_repeat("\0", 16);
+        $builder = UdfBuilder::build(['a.txt' => 'a']);
+        $builder->patch(256, 0, substr($anchor, 0, 16));
+
+        $this->assertNull($this->open($builder)->getUdfFileSystem());
+    }
+
+    public function testDescriptorOfTheVolumeSequenceWithABadChecksumEndsTheSequence(): void
+    {
+        $builder = UdfBuilder::build(['a.txt' => 'a']);
+        // partition descriptors of both sequences: the logical volume after them is never reached
+        $builder->patch(33, 4, chr(0xAA))->patch(49, 4, chr(0xAA));
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Incomplete UDF volume descriptor sequence');
+
+        $this->open($builder)->getUdfFileSystem();
+    }
+
+    public function testFileEntryWithABadChecksumIsSkipped(): void
+    {
+        $builder = UdfBuilder::build(['a.txt' => 'a', 'b.txt' => 'b']);
+        $builder->patch(self::FIRST_FILE, 4, chr(0xAA));
+
+        $this->assertSame(['/b.txt'], $this->paths($this->open($builder)));
+    }
+
+    public function testFileEntryWithAWrongLocationIsSkipped(): void
+    {
+        $builder = UdfBuilder::build(['a.txt' => 'a', 'b.txt' => 'b']);
+        // the checksum is kept valid: the location (offset 12) and the checksum (offset 4) change together
+        $tag = UdfBuilder::tag(261, 77);
+        $builder->patch(self::FIRST_FILE, 0, $tag);
+
+        $this->assertSame(['/b.txt'], $this->paths($this->open($builder)));
+    }
+
+    public function testExtentBeyondTheEndOfThePartitionSkipsTheFile(): void
+    {
+        $builder = UdfBuilder::build(['a.txt' => 'a', 'b.txt' => 'b']);
+        // the partition is 100000 blocks long, the first allocation descriptor of a.txt points to its last block + 1
+        $builder->patch(self::FIRST_FILE, 180, pack('V', 100000));
+
+        $this->assertSame(['/b.txt'], $this->paths($this->open($builder)));
+    }
+
+    public function testExtentCrossingTheEndOfThePartitionSkipsTheFile(): void
+    {
+        $builder = UdfBuilder::build(['a.txt' => str_repeat('x', 3 * 2048), 'b.txt' => 'b']);
+        $builder->patch(self::FIRST_FILE, 180, pack('V', 100000 - 1));
+
+        $this->assertSame(['/b.txt'], $this->paths($this->open($builder)));
+    }
+
+    public function testShortPartitionHidesTheContentOutsideOfIt(): void
+    {
+        $builder = UdfBuilder::build(['a.txt' => 'a']);
+        // partition descriptors report 3 blocks: the root directory data is outside of the partition
+        $builder->patch(33, 192, pack('V', 3))->patch(49, 192, pack('V', 3));
+
+        $this->assertSame([], $this->paths($this->open($builder)));
     }
 }

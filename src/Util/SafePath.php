@@ -26,6 +26,19 @@ class SafePath
         if (preg_match('/[\x00-\x1f\/\\\\:]/', $name) === 1) {
             throw new Exception('Unsafe characters in ISO name: ' . addcslashes($name, "\0..\37"));
         }
+
+        // rejected on every OS: an image is portable and must extract the same way everywhere
+        if (preg_match('/[<>"|?*]/', $name) === 1) {
+            throw new Exception('Unsafe characters in ISO name: ' . $name);
+        }
+
+        if (str_ends_with($name, '.') || str_ends_with($name, ' ')) {
+            throw new Exception('Unsafe trailing dot or space in ISO name: "' . $name . '"');
+        }
+
+        if (preg_match('/^(?:con|prn|aux|nul|(?:com|lpt)[1-9\x{00B9}\x{00B2}\x{00B3}])(?:\..*)?$/iu', $name) === 1) {
+            throw new Exception('Reserved device name in ISO: "' . $name . '"');
+        }
     }
 
     /**

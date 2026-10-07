@@ -33,10 +33,13 @@
     },
     "scripts": {
         "tests": "phpunit --no-coverage",
-        "tests:coverage": "phpunit --coverage-text",
+        "tests:coverage": [
+            "@putenv XDEBUG_MODE=coverage",
+            "phpunit --coverage-text"
+        ],
         "cs:check": "phpcs",
         "cs:fix": "phpcbf",
-        "phpstan": "phpstan analyze",
+        "phpstan": "phpstan analyze --memory-limit=1G",
         "rector:check": "rector process --dry-run",
         "rector:fix": "rector process",
         "check": [

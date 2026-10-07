@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PhpIso\Cli;
 
+use Generator;
+use PhpIso\BrowsesEntries;
 use PhpIso\Descriptor;
 use PhpIso\Descriptor\Boot;
 use PhpIso\Descriptor\BootCatalog;
@@ -15,6 +17,7 @@ use PhpIso\FileSystem;
 use PhpIso\IsoEntry;
 use PhpIso\IsoFile;
 use PhpIso\Udf\UdfFileSystem;
+use PhpIso\WalkWarnings;
 use Throwable;
 
 class IsoTool
@@ -23,6 +26,14 @@ class IsoTool
     public const EXIT_USAGE = 1;
     public const EXIT_INVALID_FILE = 2;
     public const EXIT_ERROR = 3;
+
+    private const array VOLUMES = ['primary', 'joliet', 'udf'];
+
+    private string $volumeName = '';
+
+    private bool $rockRidge = true;
+
+    private WalkWarnings $warnings;
 
     /**
      * @param resource|null $input stream read when the file is "-" (defaults to the standard input)
@@ -55,6 +66,11 @@ class IsoTool
             return self::EXIT_USAGE;
         }
 
+        if (! isset($options['file']) && ! isset($options['f'])) {
+            $this->displayError('Missing --file option');
+            return self::EXIT_USAGE;
+        }
+
         $file = $this->firstString($options['file'] ?? $options['f'] ?? null);
 
         if ($file === '') {
@@ -65,17 +81,48 @@ class IsoTool
         $extractPath = $this->firstString($options['extract'] ?? $options['x'] ?? null);
         $catPath = $this->firstString($options['cat'] ?? $options['c'] ?? null);
         $find = $this->firstString($options['find'] ?? null);
-        $json = isset($options['json']) || isset($options['j']);
-        $list = isset($options['list']) || isset($options['l']);
+        $bootPath = $this->firstString($options['extract-boot'] ?? null);
+        $volumeName = $this->firstString($options['volume'] ?? null);
 
         // options taking a value: long name => [value, short name]
-        $valued = ['extract' => [$extractPath, 'x'], 'cat' => [$catPath, 'c'], 'find' => [$find, 'find']];
+        $valued = ['extract' => [$extractPath, 'x'], 'cat' => [$catPath, 'c'], 'find' => [$find, 'find'], 'extract-boot' => [$bootPath, 'extract-boot'], 'volume' => [$volumeName, 'volume']];
         foreach ($valued as $name => [$value, $short]) {
             if ((isset($options[$name]) || isset($options[$short])) && $value === '') {
                 $this->displayError('The ' . $name . ' option requires a value');
                 return self::EXIT_USAGE;
             }
         }
+
+        $json = isset($options['json']) || isset($options['j']);
+        $list = isset($options['list']) || isset($options['l']);
+        $ndjson = isset($options['ndjson']);
+
+        $actions = array_keys(array_filter([
+            'extract' => $extractPath !== '',
+            'cat' => $catPath !== '',
+            'find' => $find !== '',
+            'extract-boot' => $bootPath !== '',
+            'list' => $list,
+            'json' => $json,
+        ]));
+        if (count($actions) > 1) {
+            $this->displayError('Only one action can be used at a time, got: --' . implode(', --', $actions));
+            return self::EXIT_USAGE;
+        }
+
+        if ($ndjson && ! $list) {
+            $this->displayError('The ndjson option requires --list');
+            return self::EXIT_USAGE;
+        }
+
+        if ($volumeName !== '' && ! in_array($volumeName, self::VOLUMES, true)) {
+            $this->displayError('Unknown volume "' . $volumeName . '", expected one of: ' . implode(', ', self::VOLUMES));
+            return self::EXIT_USAGE;
+        }
+
+        $this->volumeName = $volumeName;
+        $this->rockRidge = ! isset($options['no-rock-ridge']);
+        $this->warnings = new WalkWarnings(isset($options['strict']));
 
         try {
             $this->checkIsoFile($file);
@@ -86,18 +133,23 @@ class IsoTool
                 $this->catAction($file, $catPath);
             } elseif ($find !== '') {
                 $this->findAction($file, $find);
+            } elseif ($bootPath !== '') {
+                $this->extractBootAction($file, $bootPath);
             } elseif ($json) {
                 $this->jsonAction($file);
             } elseif ($list) {
-                $this->listAction($file);
+                $this->listAction($file, $ndjson);
             } else {
                 echo 'Input ISO file: ' . $file . PHP_EOL;
-                $this->infoAction($file);
+                $this->infoAction($file, isset($options['files']));
             }
         } catch (Throwable $ex) {
+            $this->displayWarnings();
             $this->displayError($ex->getMessage());
             return self::EXIT_ERROR;
         }
+
+        $this->displayWarnings();
 
         return self::EXIT_OK;
     }
@@ -125,7 +177,7 @@ class IsoTool
         }
     }
 
-    protected function infoAction(string $file): void
+    protected function infoAction(string $file, bool $files = false): void
     {
         $isoFile = $this->openIso($file);
 
@@ -139,7 +191,9 @@ class IsoTool
 
             if ($descriptor instanceof Volume) {
                 $this->infoVolume($descriptor);
-                $this->displayFiles($descriptor, $isoFile);
+                if ($files) {
+                    $this->displayFiles($descriptor, $isoFile);
+                }
             } elseif ($descriptor instanceof Boot) {
                 $this->infoBoot($descriptor, $isoFile);
             }
@@ -151,21 +205,25 @@ class IsoTool
         if ($udf instanceof UdfFileSystem) {
             echo '  - UDF file system' . PHP_EOL;
             echo '   - Volume ID: ' . $udf->volumeId . PHP_EOL;
-            $this->displayFiles($udf, $isoFile);
+            if ($files) {
+                $this->displayFiles($udf, $isoFile);
+            }
             echo PHP_EOL;
         }
     }
 
-    protected function listAction(string $file): void
+    protected function listAction(string $file, bool $ndjson = false): void
     {
         $isoFile = $this->openIso($file);
         $volume = $this->requireVolume($isoFile);
 
-        foreach ($volume->walk($isoFile) as $entry) {
-            if ($entry->isDirectory) {
+        foreach ($volume->walk($isoFile, 64, $this->warnings) as $entry) {
+            if ($ndjson) {
+                echo json_encode($entry->toArray(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) . PHP_EOL;
+            } elseif ($entry->isDirectory) {
                 echo $entry->path . '/' . PHP_EOL;
             } else {
-                echo $entry->path . "	" . $entry->size . ($entry->isSymlink() ? "	-> " . $entry->rockRidge?->symlink : "") . PHP_EOL;
+                echo $entry->path . "	" . $entry->size . ($entry->isSymlink() ? "	-> " . $entry->getSymlinkTarget() : "") . PHP_EOL;
             }
         }
     }
@@ -175,7 +233,7 @@ class IsoTool
         $isoFile = $this->openIso($file);
         $volume = $this->requireVolume($isoFile);
 
-        $entry = $volume->find($isoFile, $path);
+        $entry = $volume->find($isoFile, $path, $this->warnings);
         if (! $entry instanceof IsoEntry) {
             throw new Exception('File not found in the ISO: ' . $path);
         }
@@ -194,7 +252,7 @@ class IsoTool
         $isoFile = $this->openIso($file);
         $volume = $this->requireVolume($isoFile);
 
-        foreach ($volume->search($isoFile, $pattern) as $entry) {
+        foreach ($volume->search($isoFile, $pattern, $this->warnings) as $entry) {
             echo $entry->path . ($entry->isDirectory ? '/' : "\t" . $entry->size) . PHP_EOL;
         }
     }
@@ -247,14 +305,78 @@ class IsoTool
 
         $count = (new Extractor())->extract($isoFile, $volume, $extractPath, static function (IsoEntry $entry): void {
             echo $entry->path . ' (location: ' . $entry->location . ') (length: ' . $entry->size . ')' . PHP_EOL;
-        });
+        }, $this->warnings);
 
         echo 'Extract finished! (' . $count . ' files)' . PHP_EOL;
     }
 
+    protected function extractBootAction(string $file, string $destination): void
+    {
+        $isoFile = $this->openIso($file);
+
+        $boot = $isoFile->getBootRecord() ?? throw new Exception('No boot record found in the ISO file.');
+        $catalog = $boot->loadCatalog($isoFile) ?? throw new Exception('The boot record is not an El Torito boot record.');
+        $entry = $catalog->getDefaultEntry() ?? throw new Exception('The boot catalog has no boot entry.');
+
+        $catalog->extractImage($isoFile, $entry, $destination);
+
+        echo 'Boot image written to: ' . $destination . ' (' . $entry->getImageSize() . ' bytes)' . PHP_EOL;
+    }
+
     protected function requireVolume(IsoFile $isoFile): FileSystem
     {
-        return $isoFile->getFileSystem() ?? throw new Exception('No supported file system found in the ISO file.');
+        $volume = match ($this->volumeName) {
+            'primary' => $isoFile->getPrimaryVolume(),
+            'joliet' => $isoFile->getSupplementaryVolume(),
+            'udf' => $isoFile->getUdfFileSystem(),
+            default => $isoFile->getFileSystem(),
+        };
+
+        if ($volume === null) {
+            throw new Exception($this->volumeName === ''
+                ? 'No supported file system found in the ISO file.'
+                : 'The ' . $this->volumeName . ' volume was not found in the ISO file.');
+        }
+
+        if (! $this->rockRidge && $volume instanceof Volume) {
+            return $this->withoutRockRidge($volume);
+        }
+
+        return $volume;
+    }
+
+    /**
+     * A view of the volume ignoring the Rock Ridge extensions (plain ISO 9660 / Joliet names)
+     */
+    private function withoutRockRidge(Volume $volume): FileSystem
+    {
+        return new readonly class ($volume) implements FileSystem {
+            use BrowsesEntries;
+
+            public function __construct(private Volume $volume)
+            {
+            }
+
+            public function walk(IsoFile $isoFile, int $maxDepth = 64, ?WalkWarnings $warnings = null): Generator
+            {
+                return $this->volume->walk($isoFile, $maxDepth, $warnings, false);
+            }
+
+            public function listDirectory(IsoFile $isoFile, ?IsoEntry $directory = null, ?WalkWarnings $warnings = null): Generator
+            {
+                return $this->volume->listDirectory($isoFile, $directory, $warnings, false);
+            }
+
+            public function getEntryRanges(IsoFile $isoFile, IsoEntry $entry): array
+            {
+                return $this->volume->getEntryRanges($isoFile, $entry);
+            }
+
+            public function copyEntryTo(IsoFile $isoFile, IsoEntry $entry, mixed $output): void
+            {
+                $this->volume->copyEntryTo($isoFile, $entry, $output);
+            }
+        };
     }
 
     /**
@@ -400,8 +522,8 @@ class IsoTool
             $argv = is_array($raw) ? array_values(array_filter(array_slice($raw, 1), is_string(...))) : [];
         }
 
-        $valued = ['f', 'x', 'c', 'file', 'extract', 'cat', 'find'];
-        $flags = ['l', 'j', 'h', 'list', 'json', 'help'];
+        $valued = ['f', 'x', 'c', 'file', 'extract', 'cat', 'find', 'volume', 'extract-boot'];
+        $flags = ['l', 'j', 'h', 'list', 'json', 'help', 'files', 'ndjson', 'no-rock-ridge', 'strict'];
 
         $options = [];
 
@@ -417,6 +539,19 @@ class IsoTool
             } elseif (str_starts_with($arg, '-') && strlen($arg) > 1) {
                 $name = $arg[1];
                 $value = strlen($arg) > 2 ? substr($arg, 2) : null;
+
+                // bundled flags (-lj): every letter is a flag
+                if ($value !== null && in_array($name, $flags, true)) {
+                    foreach (str_split(substr($arg, 1)) as $letter) {
+                        if (! in_array($letter, $flags, true)) {
+                            throw new Exception('Unknown option: -' . $letter . ' in ' . $arg);
+                        }
+
+                        $options[$letter] = false;
+                    }
+
+                    continue;
+                }
             } else {
                 throw new Exception('Unexpected argument: ' . $arg);
             }
@@ -448,7 +583,24 @@ class IsoTool
     }
     protected function displayError(string $error): void
     {
-        fwrite(STDERR, 'ERROR: ' . $error . PHP_EOL);
+        $this->writeError('ERROR: ' . $error);
+    }
+
+    protected function writeError(string $line): void
+    {
+        fwrite(STDERR, $line . PHP_EOL);
+    }
+
+    /**
+     * Report what made the listing incomplete (the exit code is not changed)
+     */
+    protected function displayWarnings(): void
+    {
+        foreach ($this->warnings->all() as $warning) {
+            $this->writeError('WARNING: ' . $warning);
+        }
+
+        $this->warnings->reset();
     }
 
     protected function displayHelp(): void
@@ -464,14 +616,25 @@ Options:
   -f, --file=<path>              Path for the ISO file, "-" reads it from the standard input (mandatory)
   -l, --list                     Print only the list of files (path and size)
   -j, --json                     Print all the information as JSON
+      --ndjson                   With --list: one JSON object per line and entry, streamed (newline delimited JSON)
   -x, --extract=<extract_path>   Extract files in the given location
   -c, --cat=<path>               Write the content of a file of the ISO to the standard output
       --find=<pattern>           List the files matching a pattern (e.g. "*.txt", case insensitive)
+      --extract-boot=<path>      Write the El Torito default boot image to the given file
+      --files                    Also list the files of every volume in the default information output
+      --volume=<name>            File system used by --list, --cat, --find and --extract: primary, joliet or udf
+                                 (default: Joliet, else primary, else UDF)
+      --no-rock-ridge            Ignore the Rock Ridge extensions (use the plain ISO 9660 / Joliet names)
+      --strict                   Fail on the first incomplete listing (depth limit, unreadable or corrupt directory)
+                                 instead of printing "WARNING: ..." lines on the standard error output
   -h, --help                     Show this help
+
+Only one of --list, --json, --extract, --cat, --find and --extract-boot can be used at a time.
+Flags can be bundled (e.g. -lj).
 
 Exit codes:
   0  success
-  1  usage error
+  1  usage error (unknown, conflicting or missing options, including a missing --file)
   2  invalid file argument
   3  the ISO could not be read or extracted
 ';

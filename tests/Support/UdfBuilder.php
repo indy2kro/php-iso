@@ -15,6 +15,8 @@ namespace PhpIso\Test\Support;
  *  - maxAds: number of allocation descriptors kept in a file entry, the rest goes to allocation extents
  *  - sparse: write blocks made only of zeros as holes
  *  - mapType: partition map type (1 is the only supported one)
+ *  - metadata: UDF 2.50 layout, the file entries, directories and the file set descriptor live in a metadata
+ *    partition (second partition map) whose metadata file is stored in two extents of the physical partition
  *  - loop: add an entry pointing back to its own directory to every directory
  *  - ghosts: the root directory also lists entries pointing to an unknown partition and beyond the end of the image
  *  - overrun: the root directory ends with an entry whose name is longer than the data
@@ -26,15 +28,24 @@ final class UdfBuilder
 
     private int $next = 1;
 
+    private int $metaNext = 1;
+
+    private int $metadataFile = 0;
+
+    /**
+     * @var array<int, string> metadata partition blocks (metadata option)
+     */
+    private array $metaBlocks = [];
+
     private readonly IsoBuilder $image;
 
     /**
-     * @var array{adType: int, extended: bool, inline: int, fragment: bool, maxAds: int, sparse: bool, mapType: int, loop: bool, ghosts: bool, overrun: bool}
+     * @var array{adType: int, extended: bool, inline: int, fragment: bool, maxAds: int, sparse: bool, mapType: int, loop: bool, ghosts: bool, overrun: bool, metadata: bool}
      */
     private readonly array $options;
 
     /**
-     * @param array{adType?: int, extended?: bool, inline?: int, fragment?: bool, maxAds?: int, sparse?: bool, mapType?: int, loop?: bool, ghosts?: bool, overrun?: bool} $options
+     * @param array{adType?: int, extended?: bool, inline?: int, fragment?: bool, maxAds?: int, sparse?: bool, mapType?: int, loop?: bool, ghosts?: bool, overrun?: bool, metadata?: bool} $options
      */
     private function __construct(array $options)
     {
@@ -49,13 +60,14 @@ final class UdfBuilder
             'loop' => $options['loop'] ?? false,
             'ghosts' => $options['ghosts'] ?? false,
             'overrun' => $options['overrun'] ?? false,
+            'metadata' => $options['metadata'] ?? false,
         ];
         $this->image = new IsoBuilder();
     }
 
     /**
      * @param array<array-key, mixed> $tree
-     * @param array{adType?: int, extended?: bool, inline?: int, fragment?: bool, maxAds?: int, sparse?: bool, mapType?: int, loop?: bool, ghosts?: bool, overrun?: bool} $options
+     * @param array{adType?: int, extended?: bool, inline?: int, fragment?: bool, maxAds?: int, sparse?: bool, mapType?: int, loop?: bool, ghosts?: bool, overrun?: bool, metadata?: bool} $options
      */
     public static function build(array $tree, array $options = []): IsoBuilder
     {
@@ -71,10 +83,42 @@ final class UdfBuilder
     private function layout(array $tree): void
     {
         // file set descriptor at block 0, root directory at block 1
-        $this->writeBlock(0, self::tag(256, 0) . str_repeat("\0", 384) . self::longAd(self::SECTOR, 1, 0));
+        $meta = $this->options['metadata'];
+        $this->writeBlock(0, self::tag(256, 0) . str_repeat("\0", 384) . self::longAd(self::SECTOR, 1, $meta ? 1 : 0), $meta);
         $this->writeNode(1, $tree, 1);
 
+        if ($meta) {
+            $this->writeMetadataFile();
+        }
+
         $this->writeAnchorAndVolumeSequence();
+    }
+
+    /**
+     * Store the metadata blocks in the physical partition as a metadata file made of two extents with a gap between
+     */
+    private function writeMetadataFile(): void
+    {
+        $count = $this->metaNext + 1;
+        $first = intdiv($count + 1, 2);
+        $entryBlock = $this->next + 1;
+        $starts = [$entryBlock + 1, $entryBlock + 1 + $first + 3];
+
+        foreach (range(0, $count - 1) as $block) {
+            $target = $block < $first ? $starts[0] + $block : $starts[1] + $block - $first;
+            $this->image->setSector(self::PARTITION_START + $target, $this->metaBlocks[$block] ?? '');
+        }
+
+        $descriptors = self::allocationDescriptor(0, $first * self::SECTOR, $starts[0], 0, 0)
+            . self::allocationDescriptor(0, ($count - $first) * self::SECTOR, $starts[1], 0, 0);
+
+        $entry = self::tag(261, $entryBlock);
+        $entry = str_pad($entry, 27, "\0") . chr(250);
+        $entry = str_pad($entry, 56, "\0") . pack('P', $count * self::SECTOR);
+        $entry = str_pad($entry, 168, "\0") . pack('V', 0) . pack('V', strlen($descriptors));
+        $this->writeBlock($entryBlock, str_pad($entry, 176, "\0") . $descriptors);
+
+        $this->metadataFile = $entryBlock;
     }
 
     private function writeAnchorAndVolumeSequence(): void
@@ -94,9 +138,15 @@ final class UdfBuilder
             $this->image->setSector($base + 1, $partition);
 
             $mapType = $this->options['mapType'];
-            $logical = self::tag(6, $base + 2) . str_repeat("\0", 196) . pack('V', self::SECTOR) . str_repeat("\0", 32) . self::longAd(self::SECTOR, 0, 0);
-            $logical = str_pad($logical, 264, "\0") . pack('V', 6) . pack('V', 1);
+            $meta = $this->options['metadata'];
+            $logical = self::tag(6, $base + 2) . str_repeat("\0", 196) . pack('V', self::SECTOR) . str_repeat("\0", 32) . self::longAd(self::SECTOR, 0, $meta ? 1 : 0);
+            $logical = str_pad($logical, 264, "\0") . pack('V', $meta ? 70 : 6) . pack('V', $meta ? 2 : 1);
             $logical = str_pad($logical, 440, "\0") . chr($mapType) . chr(6) . pack('v', 1) . pack('v', 1);
+            if ($meta) {
+                $logical .= chr(2) . chr(64) . "\0\0" . "\0" . str_pad('*UDF Metadata Partition', 23, "\0") . str_repeat("\0", 8)
+                    . pack('v', 1) . pack('v', 1) . pack('V', $this->metadataFile) . pack('V', 0xFFFFFFFF) . pack('V', 0xFFFFFFFF)
+                    . pack('V', 1) . pack('v', 0) . str_repeat("\0", 6);
+            }
             $this->image->setSector($base + 2, $logical);
 
             $this->image->setSector($base + 3, self::tag(8, $base + 3));
@@ -108,8 +158,10 @@ final class UdfBuilder
      *
      * @param array<array-key, mixed>|string $content
      */
-    private function writeNode(int $block, array|string $content, int $parentBlock): void
+    private function writeNode(int $block, array|string|UdfSpec $content, int $parentBlock): void
     {
+        $spec = $content instanceof UdfSpec ? $content : null;
+        $content = $spec instanceof UdfSpec ? $spec->data : $content;
         $isDirectory = is_array($content);
         $data = $isDirectory ? $this->directoryData($content, $block, $parentBlock) : $content;
         $length = strlen($data);
@@ -122,26 +174,30 @@ final class UdfBuilder
             $flags = 3;
         } else {
             $flags = $adType;
-            $descriptors = $this->extentDescriptors($data, $adType);
+            $descriptors = $this->extentDescriptors($data, $adType, $isDirectory);
         }
 
         $extended = $this->options['extended'];
-        $entry = self::tag($extended ? 266 : 261, self::PARTITION_START + $block);
-        $entry = str_pad($entry, 27, "\0") . chr($isDirectory ? 4 : 5);
+        $entry = self::tag($extended ? 266 : 261, $block);
+        $entry = str_pad($entry, 27, "\0") . chr($isDirectory ? 4 : ($spec->type ?? 5));
         $entry = str_pad($entry, 34, "\0") . pack('v', $flags);
+        $entry = str_pad($entry, 36, "\0") . pack('V', $spec->uid ?? 0) . pack('V', $spec->gid ?? 0) . pack('V', $spec->permissions ?? 0);
         $entry = str_pad($entry, 56, "\0") . pack('P', $length);
         $entry = str_pad($entry, $extended ? 92 : 84, "\0") . self::timestamp();
         $entry = str_pad($entry, $extended ? 208 : 168, "\0") . pack('V', 0) . pack('V', strlen($descriptors));
         $entry = str_pad($entry, $extended ? 216 : 176, "\0") . $descriptors;
 
-        $this->writeBlock($block, $entry);
+        $this->writeBlock($block, $entry, $this->options['metadata']);
     }
 
     /**
      * Allocate blocks for the data and return the allocation descriptors describing them
      */
-    private function extentDescriptors(string $data, int $adType): string
+    private function extentDescriptors(string $data, int $adType, bool $isDirectory): string
     {
+        // in the metadata layout the directories are metadata, the files stay in the physical partition
+        $meta = $this->options['metadata'] && $isDirectory;
+        $reference = $meta ? 1 : 0;
         /** @var list<array{int, int, int}> $extents */
         $extents = [];
         $sparse = $this->options['sparse'];
@@ -158,9 +214,9 @@ final class UdfBuilder
                 $extents[] = [1, $size, 0];
             } else {
                 $blocks = (int) ceil($size / self::SECTOR);
-                $start = $this->allocate($blocks);
+                $start = $this->allocate($blocks, $meta);
                 foreach (str_split($chunk, self::SECTOR) as $i => $part) {
-                    $this->writeBlock($start + $i, $part);
+                    $this->writeBlock($start + $i, $part, $meta);
                 }
                 $extents[] = [0, $size, $start];
             }
@@ -171,32 +227,33 @@ final class UdfBuilder
         $maxAds = $this->options['maxAds'];
 
         if (count($extents) <= $maxAds) {
-            return self::encodeAll($extents, $adType);
+            return self::encodeAll($extents, $adType, $reference);
         }
 
         // the descriptors that do not fit go to allocation extents (chained when needed)
         $head = array_slice($extents, 0, $maxAds - 1);
         $rest = array_slice($extents, $maxAds - 1);
 
-        return self::encodeAll($head, $adType) . $this->continuation($rest, $maxAds, $adType);
+        return self::encodeAll($head, $adType, $reference) . $this->continuation($rest, $maxAds, $adType, $reference);
     }
 
     /**
      * @param array<int, array{int, int, int}> $extents
      */
-    private function continuation(array $extents, int $maxAds, int $adType): string
+    private function continuation(array $extents, int $maxAds, int $adType, int $reference): string
     {
-        $block = $this->allocate(1);
+        $meta = $this->options['metadata'];
+        $block = $this->allocate(1, $meta);
 
         if (count($extents) > $maxAds) {
-            $area = self::encodeAll(array_slice($extents, 0, $maxAds - 1), $adType) . $this->continuation(array_slice($extents, $maxAds - 1), $maxAds, $adType);
+            $area = self::encodeAll(array_slice($extents, 0, $maxAds - 1), $adType, $reference) . $this->continuation(array_slice($extents, $maxAds - 1), $maxAds, $adType, $reference);
         } else {
-            $area = self::encodeAll($extents, $adType);
+            $area = self::encodeAll($extents, $adType, $reference);
         }
 
-        $this->writeBlock($block, self::tag(258, self::PARTITION_START + $block) . pack('V', 0) . pack('V', strlen($area)) . $area);
+        $this->writeBlock($block, self::tag(258, $block) . pack('V', 0) . pack('V', strlen($area)) . $area, $meta);
 
-        return self::allocationDescriptor(3, self::SECTOR, $block, $adType);
+        return self::allocationDescriptor(3, self::SECTOR, $block, $adType, $meta ? 1 : 0);
     }
 
     /**
@@ -204,26 +261,27 @@ final class UdfBuilder
      */
     private function directoryData(array $children, int $block, int $parentBlock): string
     {
-        $data = self::fileIdentifier('', $parentBlock, 0x0A);
+        $reference = $this->options['metadata'] ? 1 : 0;
+        $data = self::fileIdentifier('', $parentBlock, 0x0A, $reference);
 
         // a directory containing itself
         if ($this->options['loop']) {
-            $data .= self::fileIdentifier('loop', $block, 0x02);
+            $data .= self::fileIdentifier('loop', $block, 0x02, $reference);
         }
 
         if ($block === 1 && $this->options['ghosts']) {
             $data .= self::fileIdentifier('ghost-partition', 5, 0x00, 7);
-            $data .= self::fileIdentifier('ghost-block', 999999, 0x00);
+            $data .= self::fileIdentifier('ghost-block', 999999, 0x00, $reference);
         }
 
         foreach ($children as $name => $content) {
-            if (! is_array($content) && ! is_string($content)) {
+            if (! is_array($content) && ! is_string($content) && ! $content instanceof UdfSpec) {
                 continue;
             }
 
-            $childBlock = $this->allocate(1);
+            $childBlock = $this->allocate(1, $this->options['metadata']);
             $this->writeNode($childBlock, $content, $block);
-            $data .= self::fileIdentifier((string) $name, $childBlock, is_array($content) ? 0x02 : 0x00);
+            $data .= self::fileIdentifier((string) $name, $childBlock, is_array($content) ? 0x02 : 0x00, $reference);
         }
 
         if ($block === 1 && $this->options['overrun']) {
@@ -251,20 +309,21 @@ final class UdfBuilder
     /**
      * @param array<int, array{int, int, int}> $extents kind, length, block
      */
-    private static function encodeAll(array $extents, int $adType): string
+    private static function encodeAll(array $extents, int $adType, int $reference = 0): string
     {
         $encoded = '';
         foreach ($extents as [$kind, $length, $block]) {
-            $encoded .= self::allocationDescriptor($kind, $length, $block, $adType);
+            $encoded .= self::allocationDescriptor($kind, $length, $block, $adType, $reference);
         }
 
         return $encoded;
     }
-    private static function allocationDescriptor(int $kind, int $length, int $block, int $adType): string
+
+    private static function allocationDescriptor(int $kind, int $length, int $block, int $adType, int $reference = 0): string
     {
         $raw = pack('V', $length | ($kind << 30)) . pack('V', $block);
 
-        return $adType === 1 ? $raw . pack('v', 0) . str_repeat("\0", 6) : $raw;
+        return $adType === 1 ? $raw . pack('v', $reference) . str_repeat("\0", 6) : $raw;
     }
 
     private static function longAd(int $length, int $block, int $partition): string
@@ -272,9 +331,16 @@ final class UdfBuilder
         return pack('V', $length) . pack('V', $block) . pack('v', $partition) . str_repeat("\0", 6);
     }
 
-    private static function tag(int $id, int $location): string
+    public static function tag(int $id, int $location): string
     {
-        return pack('vvCCvvvV', $id, 3, 0, 0, 1, 0, 0, $location);
+        $raw = pack('vvCCvvvV', $id, 3, 0, 0, 1, 0, 0, $location);
+        $sum = 0;
+        foreach ([0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] as $index) {
+            $sum += ord($raw[$index]);
+        }
+        $raw[4] = chr($sum & 0xFF);
+
+        return $raw;
     }
 
     private static function timestamp(): string
@@ -283,16 +349,29 @@ final class UdfBuilder
         return pack('v', (1 << 12) | 60) . pack('v', 2024) . chr(5) . chr(6) . chr(7) . chr(8) . chr(9) . str_repeat("\0", 3);
     }
 
-    private function allocate(int $blocks): int
+    private function allocate(int $blocks, bool $meta = false): int
     {
+        if ($meta) {
+            $start = ++$this->metaNext;
+            $this->metaNext += max($blocks, 1) - 1;
+
+            return $start;
+        }
+
         $start = ++$this->next;
         $this->next += max($blocks, 1) - 1;
 
         return $start;
     }
 
-    private function writeBlock(int $block, string $data): void
+    private function writeBlock(int $block, string $data, bool $meta = false): void
     {
+        if ($meta) {
+            $this->metaBlocks[$block] = $data;
+
+            return;
+        }
+
         $this->image->setSector(self::PARTITION_START + $block, $data);
     }
 }

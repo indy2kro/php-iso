@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PhpIso;
 
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use PhpIso\Util\Buffer;
 use PhpIso\Util\IsoDate;
 
@@ -77,7 +77,7 @@ class FileDirectory
         /**
          * The recording date
          */
-        public readonly ?Carbon $recordingDate,
+        public readonly ?CarbonImmutable $recordingDate,
         /**
          * File (or folder) flags.
          */
@@ -167,12 +167,18 @@ class FileDirectory
         } else {
             $fileId = Buffer::readDString($buffer, $fileIdLength, $tmp, $supplementary);
 
-            $pos = strpos($fileId, ';1');
-            if ($pos !== false && $pos === strlen($fileId) - 2) {
-                $fileId = substr($fileId, 0, strlen($fileId) - 2);
-            }
-
             $fileId = trim($fileId);
+
+            if (($flags & self::FILE_MODE_DIRECTORY) === 0) {
+                // drop the version (";1", ";32767"...)
+                $stripped = preg_replace('/;\d+$/', '', $fileId);
+                $fileId = $stripped ?? $fileId;
+
+                // ISO 9660 writes a separator dot after names without an extension ("README."), Joliet names are kept
+                if (! $supplementary && strlen($fileId) > 1 && str_ends_with($fileId, '.')) {
+                    $fileId = substr($fileId, 0, -1);
+                }
+            }
         }
 
         // the system use area (SUSP / Rock Ridge) follows the identifier and its padding byte
@@ -274,17 +280,33 @@ class FileDirectory
      *
      * When the directory size is not known, it is read from the "." record at the start of the directory.
      *
+     * @param WalkWarnings|null $warnings receives what makes the result incomplete (too large, truncated or corrupt directory)
+     * @param string $where name of the directory, for the warnings
+     *
      * @return array<int, FileDirectory>|false
      */
-    public static function loadExtentsSt(IsoFile $isoFile, int $blockSize, int $location, bool $supplementary = false, int $jolietLevel = 0, ?int $dataLength = null): array|false
+    public static function loadExtentsSt(IsoFile $isoFile, int $blockSize, int $location, bool $supplementary = false, int $jolietLevel = 0, ?int $dataLength = null, ?WalkWarnings $warnings = null, string $where = ''): array|false
     {
         $sector = self::SECTOR_SIZE;
 
         $position = $location * $blockSize;
+        $where = ($where === '' ? '/' : $where) . ' (location ' . $location . ')';
+
+        if ($dataLength !== null && $dataLength > IsoFile::MAX_READ_LENGTH) {
+            $warnings?->add('directory too large to be read: ' . $where);
+        }
 
         $string = self::readAt($isoFile, $position, $dataLength === null ? $sector : self::boundedLength($isoFile, $position, $dataLength));
         if ($string === false) {
+            if ($dataLength === null || ($dataLength > 0 && $dataLength <= IsoFile::MAX_READ_LENGTH)) {
+                $warnings?->add('directory cannot be read: ' . $where);
+            }
+
             return false;
+        }
+
+        if ($dataLength !== null && strlen($string) < $dataLength && $dataLength <= IsoFile::MAX_READ_LENGTH) {
+            $warnings?->add('directory is truncated (' . strlen($string) . ' of ' . $dataLength . ' bytes): ' . $where);
         }
 
         if ($dataLength === null) {
@@ -325,6 +347,7 @@ class FileDirectory
                 $fdDesc = self::read($bytes, $offset, $supplementary, $jolietLevel);
             } catch (Exception) {
                 // corrupt record: keep what was parsed so far
+                $warnings?->add('corrupt directory record at offset ' . ($offset - 1) . ' in ' . $where);
                 break;
             }
 

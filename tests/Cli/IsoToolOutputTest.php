@@ -59,7 +59,7 @@ final class IsoToolOutputTest extends TestCase
 
     public function testInfoPrintsVolumeDetails(): void
     {
-        [$code, $output] = $this->runTool(['-f', self::FIXTURES . '1mb.iso']);
+        [$code, $output] = $this->runTool(['--files', '-f', self::FIXTURES . '1mb.iso']);
 
         $this->assertSame(IsoTool::EXIT_OK, $code);
         $this->assertStringContainsString('Volume ID: 25_12_2024', $output);
@@ -79,7 +79,7 @@ final class IsoToolOutputTest extends TestCase
 
     public function testInfoPrintsDirectories(): void
     {
-        [, $output] = $this->runTool(['-f', self::FIXTURES . 'subdir.iso']);
+        [, $output] = $this->runTool(['--files', '-f', self::FIXTURES . 'subdir.iso']);
 
         $this->assertStringContainsString('/DIR1/', $output);
     }

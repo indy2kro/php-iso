@@ -23,6 +23,11 @@ class IsoFile
     public const MAX_READ_LENGTH = 64 * 1024 * 1024;
 
     /**
+     * Maximum number of volume descriptors read before giving up (a crafted image could chain them endlessly)
+     */
+    public const MAX_DESCRIPTORS = 64;
+
+    /**
      * Descriptors of a type that was already present (the first one wins), kept in file order
      *
      * @var array<int, Descriptor>
@@ -48,7 +53,7 @@ class IsoFile
     /**
      * @var ?resource
      */
-    protected mixed $fileHandle;
+    protected mixed $fileHandle = null;
 
     public function __construct(protected string $isoFilePath)
     {
@@ -197,13 +202,33 @@ class IsoFile
     }
 
     /**
-     * The supplementary (Joliet) volume descriptor, if present
+     * The Joliet volume descriptor (a supplementary one with a Joliet escape sequence), if present
+     *
+     * Plain supplementary descriptors and enhanced volume descriptors (see getEnhancedVolume()) are not returned.
      */
     public function getSupplementaryVolume(): ?SupplementaryVolume
     {
-        $descriptor = $this->descriptors[Type::SUPPLEMENTARY_VOLUME_DESC] ?? null;
+        foreach ([...$this->descriptors, ...$this->additionalDescriptors] as $descriptor) {
+            if ($descriptor instanceof SupplementaryVolume && $descriptor->jolietLevel > 0) {
+                return $descriptor;
+            }
+        }
 
-        return $descriptor instanceof SupplementaryVolume ? $descriptor : null;
+        return null;
+    }
+
+    /**
+     * The enhanced volume descriptor (ISO 9660:1999, a supplementary descriptor of version 2), if present
+     */
+    public function getEnhancedVolume(): ?SupplementaryVolume
+    {
+        foreach ([...$this->descriptors, ...$this->additionalDescriptors] as $descriptor) {
+            if ($descriptor instanceof SupplementaryVolume && $descriptor->version === 2) {
+                return $descriptor;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -234,11 +259,68 @@ class IsoFile
     /**
      * The file system to browse: the preferred ISO 9660 volume, or the UDF file system for UDF only images
      *
+     * Windows install media and other UDF bridge images carry a stub ISO 9660 tree (typically a single README.TXT)
+     * next to the real UDF one: when the ISO 9660 root has no subdirectory and at most one file while the UDF
+     * root has more entries, the UDF file system is returned.
+     *
      * @throws Exception when only an unsupported UDF file system is present
      */
     public function getFileSystem(): ?FileSystem
     {
-        return $this->getPreferredVolume() ?? $this->getUdfFileSystem();
+        $volume = $this->getPreferredVolume();
+
+        if ($volume === null) {
+            return $this->getUdfFileSystem();
+        }
+
+        [$directories, $files] = self::countRootEntries($this, $volume, 2);
+        if ($directories > 0 || $files > 1) {
+            return $volume;
+        }
+
+        try {
+            $udf = $this->getUdfFileSystem();
+        } catch (Exception) {
+            return $volume;
+        }
+
+        if ($udf instanceof UdfFileSystem) {
+            [$udfDirectories, $udfFiles] = self::countRootEntries($this, $udf, $directories + $files + 1);
+            if ($udfDirectories + $udfFiles > $directories + $files) {
+                return $udf;
+            }
+        }
+
+        return $volume;
+    }
+
+    /**
+     * Number of directories and files directly in the root of a file system, counting stops after $limit entries
+     *
+     * @return array{int, int}
+     */
+    private static function countRootEntries(self $isoFile, FileSystem $fileSystem, int $limit): array
+    {
+        $directories = 0;
+        $files = 0;
+
+        foreach ($fileSystem->walk($isoFile) as $entry) {
+            if (substr_count($entry->path, '/') > 1) {
+                continue;
+            }
+
+            if ($entry->isDirectory) {
+                $directories++;
+            } else {
+                $files++;
+            }
+
+            if ($directories + $files >= $limit) {
+                break;
+            }
+        }
+
+        return [$directories, $files];
     }
 
     /**
@@ -276,6 +358,13 @@ class IsoFile
         if (file_exists($this->isoFilePath) === false) {
             throw new Exception('File does not exist: ' . $this->isoFilePath);
         }
+
+        if (! is_file($this->isoFilePath)) {
+            throw new Exception('Not a file: ' . $this->isoFilePath);
+        }
+
+        // opening twice must not leak the previous handle
+        $this->closeFile();
 
         $fileHandle = fopen($this->isoFilePath, 'rb');
 
@@ -315,12 +404,17 @@ class IsoFile
         $reader = new Reader($this);
 
         $foundTerminator = false;
+        $count = 0;
         while (true) {
+            if (++$count > self::MAX_DESCRIPTORS) {
+                throw new Exception('Too many volume descriptors (more than ' . self::MAX_DESCRIPTORS . '), not a valid ISO image');
+            }
+
             try {
                 $descriptor = $reader->read();
 
                 if ($descriptor === null) {
-                    throw new Exception('Finished reading');
+                    throw new Exception('The volume descriptors cannot be read: the image ends before the descriptor terminator');
                 }
 
                 if (isset($descriptors[$descriptor->getType()]) && ! ($descriptor instanceof UdfDescriptor)) {
@@ -348,10 +442,7 @@ class IsoFile
             }
 
             if ($descriptor->getType() === Type::TERMINATOR_DESC) {
-                if ($foundTerminator) {
-                    break;
-                }
-
+                // a second terminator already ended the loop above
                 $foundTerminator = true;
                 // Keep going if UDF might still be present
                 continue;

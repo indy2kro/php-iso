@@ -16,21 +16,42 @@ interface FileSystem
      *
      * Entries are untrusted: names are not sanitized here, see Util\SafePath before using them on disk.
      *
+     * Anything skipped (depth limit, unreadable or corrupt directories) is recorded in $warnings, or throws when it
+     * is a strict WalkWarnings.
+     *
      * @return Generator<int, IsoEntry>
      */
-    public function walk(IsoFile $isoFile, int $maxDepth = 64): Generator;
+    public function walk(IsoFile $isoFile, int $maxDepth = 64, ?WalkWarnings $warnings = null): Generator;
+
+    /**
+     * List the direct children of one directory (the root directory when $directory is null)
+     *
+     * The entries are the ones walk() reports for that directory.
+     *
+     * @return Generator<int, IsoEntry>
+     */
+    public function listDirectory(IsoFile $isoFile, ?IsoEntry $directory = null, ?WalkWarnings $warnings = null): Generator;
+
+    /**
+     * The byte ranges (absolute offset in the image, length) holding the data of a file entry, in order
+     *
+     * A negative offset is a sparse range, read as zeros.
+     *
+     * @return list<array{int, int}>
+     */
+    public function getEntryRanges(IsoFile $isoFile, IsoEntry $entry): array;
 
     /**
      * Find an entry by its path (exact match first, then case insensitive)
      */
-    public function find(IsoFile $isoFile, string $path): ?IsoEntry;
+    public function find(IsoFile $isoFile, string $path, ?WalkWarnings $warnings = null): ?IsoEntry;
 
     /**
      * Entries whose name matches a shell style pattern (case insensitive), e.g. "*.txt"
      *
      * @return Generator<int, IsoEntry>
      */
-    public function search(IsoFile $isoFile, string $pattern): Generator;
+    public function search(IsoFile $isoFile, string $pattern, ?WalkWarnings $warnings = null): Generator;
 
     /**
      * Copy the content of a file entry to an open stream
