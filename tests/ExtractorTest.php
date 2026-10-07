@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace PhpIso\Test;
 
+use PhpIso\BrowsesEntries;
 use PhpIso\Exception;
 use PhpIso\Extractor;
+use PhpIso\FileSystem;
 use PhpIso\IsoEntry;
 use PhpIso\IsoFile;
+use Carbon\Carbon;
+use PhpIso\RockRidgeInfo;
 use PHPUnit\Framework\TestCase;
 
 final class ExtractorTest extends TestCase
@@ -81,5 +85,101 @@ final class ExtractorTest extends TestCase
         $this->expectException(Exception::class);
 
         $isoFile->extractRange(0, PHP_INT_MAX - 10, $this->destination . '.bin');
+    }
+
+    /**
+     * @param list<IsoEntry> $entries
+     */
+    private function fakeFileSystem(array $entries, ?string $failOn = null): FileSystem
+    {
+        return new readonly class ($entries, $failOn) implements FileSystem {
+            use BrowsesEntries;
+
+            /** @param list<IsoEntry> $entries */
+            public function __construct(private array $entries, private ?string $failOn)
+            {
+            }
+
+            public function walk(IsoFile $isoFile, int $maxDepth = 64): \Generator
+            {
+                yield from $this->entries;
+            }
+
+            public function copyEntryTo(IsoFile $isoFile, IsoEntry $entry, mixed $output): void
+            {
+                fwrite($output, 'partial');
+
+                if ($entry->path === $this->failOn) {
+                    throw new Exception('read failed');
+                }
+            }
+        };
+    }
+
+    private function entry(string $path, bool $isDirectory = false, ?Carbon $date = null, ?RockRidgeInfo $rr = null): IsoEntry
+    {
+        return new IsoEntry($path, basename($path), $isDirectory, 7, 0, $date, false, [], $rr);
+    }
+
+    private function isoFile(): IsoFile
+    {
+        return new IsoFile(dirname(__DIR__) . '/fixtures/subdir.iso');
+    }
+
+    public function testExtractKeepsModificationTimes(): void
+    {
+        $date = Carbon::createFromTimestampUTC(981173106);
+        $fs = $this->fakeFileSystem([
+            $this->entry('/dir', true, $date),
+            $this->entry('/dir/a.txt', false, $date),
+        ]);
+
+        (new Extractor())->extract($this->isoFile(), $fs, $this->destination);
+
+        $this->assertSame($date->getTimestamp(), filemtime($this->destination . '/dir/a.txt'));
+        $this->assertSame($date->getTimestamp(), filemtime($this->destination . '/dir'));
+    }
+
+    public function testExtractAppliesRockRidgeModeOnlyWhenAsked(): void
+    {
+        if (DIRECTORY_SEPARATOR === '\\') {
+            $this->markTestSkipped('POSIX permissions are not available on Windows');
+        }
+
+        $entries = [$this->entry('/a.txt', false, null, new RockRidgeInfo(mode: 0100640))];
+
+        (new Extractor(preserveMode: true))->extract($this->isoFile(), $this->fakeFileSystem($entries), $this->destination);
+
+        $this->assertSame(0640, fileperms($this->destination . '/a.txt') & 0777);
+    }
+
+    public function testExtractContinuesPastUnsafeNamesAndFailedWrites(): void
+    {
+        $fs = $this->fakeFileSystem([
+            $this->entry('/CON'),
+            $this->entry('/bad.txt'),
+            $this->entry('/good.txt'),
+        ], '/bad.txt');
+
+        $extractor = new Extractor(continueOnError: true);
+        $count = $extractor->extract($this->isoFile(), $fs, $this->destination);
+
+        $this->assertSame(1, $count);
+        $this->assertSame(['/CON', '/bad.txt'], array_keys($extractor->getErrors()));
+        $this->assertSame('read failed', $extractor->getErrors()['/bad.txt']);
+        $this->assertFileDoesNotExist($this->destination . '/bad.txt');
+        $this->assertFileExists($this->destination . '/good.txt');
+    }
+
+    public function testFailedCopyDeletesPartialFileAndRethrows(): void
+    {
+        $fs = $this->fakeFileSystem([$this->entry('/bad.txt')], '/bad.txt');
+
+        try {
+            (new Extractor())->extract($this->isoFile(), $fs, $this->destination);
+            $this->fail('Exception expected');
+        } catch (Exception) {
+            $this->assertFileDoesNotExist($this->destination . '/bad.txt');
+        }
     }
 }

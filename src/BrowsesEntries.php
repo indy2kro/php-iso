@@ -35,12 +35,22 @@ trait BrowsesEntries
     /**
      * Entries whose name matches a shell style pattern (case insensitive), e.g. "*.txt"
      *
+     * A pattern containing "/" is matched against the whole path instead ("docs/*.txt", leading "/" optional)
+     * and "*" does not cross directories.
+     *
      * @return Generator<int, IsoEntry>
      */
     public function search(IsoFile $isoFile, string $pattern): Generator
     {
+        $byPath = str_contains($pattern, '/');
+        $pattern = $byPath ? '/' . ltrim($pattern, '/') : $pattern;
+
         foreach ($this->walk($isoFile) as $entry) {
-            if (fnmatch($pattern, $entry->name, FNM_CASEFOLD)) {
+            $matches = $byPath
+                ? fnmatch($pattern, '/' . ltrim($entry->path, '/'), FNM_CASEFOLD | FNM_PATHNAME)
+                : fnmatch($pattern, $entry->name, FNM_CASEFOLD);
+
+            if ($matches) {
                 yield $entry;
             }
         }

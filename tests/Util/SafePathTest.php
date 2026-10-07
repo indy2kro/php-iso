@@ -29,6 +29,17 @@ final class SafePathTest extends TestCase
         yield 'drive letter' => ['/C:/evil.txt'];
         yield 'null byte' => ["/evil\0.txt"];
         yield 'dot segment' => ['/dir/./file'];
+        yield 'device name' => ['/dir/CON'];
+        yield 'device name with extension' => ['/dir/nul.txt'];
+        yield 'numbered device' => ['/Com1'];
+        yield 'superscript device' => ['/LPT¹.log'];
+        yield 'trailing dot' => ['/file.'];
+        yield 'trailing space' => ['/file '];
+        yield 'angle bracket' => ['/a<b'];
+        yield 'pipe' => ['/a|b'];
+        yield 'question mark' => ['/a?b'];
+        yield 'asterisk' => ['/a*b'];
+        yield 'double quote' => ['/a"b'];
     }
 
     #[DataProvider('unsafePaths')]
@@ -44,5 +55,14 @@ final class SafePathTest extends TestCase
         $this->expectException(Exception::class);
 
         SafePath::assertSafeName('');
+    }
+
+    public function testAssertSafeNameAcceptsNamesLookingLikeDevices(): void
+    {
+        SafePath::assertSafeName('console.txt');
+        SafePath::assertSafeName('COM10');
+        SafePath::assertSafeName('NULL');
+
+        $this->addToAssertionCount(1);
     }
 }
