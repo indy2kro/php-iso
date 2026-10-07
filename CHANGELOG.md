@@ -15,7 +15,7 @@ Planned as 2.0.0.
 - UDF file system reading: `IsoFile::getUdfFileSystem()` and `Udf\UdfFileSystem`, with plain and metadata (UDF 2.50, e.g. Blu-ray) partition maps, symbolic links, owner and permissions (sparable and virtual partitions are reported as unsupported)
 - `FileSystem` interface shared by ISO 9660 volumes and UDF (`walk`, `listDirectory`, `getEntryRanges`, `find`, `search`, `copyEntryTo`, `openStream`, `readFile`) and `IsoFile::getFileSystem()`, which also covers UDF only and UDF bridge images
 - `IsoEntry` value object (path, name, size, location, dates, `extents`, `rockRidge`, `uid`, `gid`, `mode`, `symlinkTarget`) and `Volume::walk()`, a depth limited generator (`$maxDepth`, 64 by default)
-- Rock Ridge support: POSIX long names, mode, owner, symbolic links, precise timestamps (`TF`), device numbers (`PN`), continuation areas and relocated directories (`RockRidgeInfo`); `walk()` / `listDirectory()` take `$rockRidge = false` to ignore it
+- Rock Ridge support: POSIX long names, mode, owner, symbolic links, precise timestamps (`TF`), device numbers (`PN`), continuation areas and relocated directories (`RockRidgeInfo`); `Volume::walk()` / `listDirectory()` take `$rockRidge = false` (last parameter) to ignore it
 - Reading file content: `readFile()`, lazy seekable `openStream()` (`Util\EntryStream`, data is read from the image on demand), `copyEntryTo()`, multi-extent files reported once
 - `find()` by path, descending one directory at a time; `search()` matches the path when the pattern contains `/`
 - `IsoFile::fromStream()` to read images from non-seekable streams (`IsoFile::MAX_STREAM_BYTES` limit)
@@ -23,7 +23,8 @@ Planned as 2.0.0.
 - El Torito: `Boot::loadCatalog()`, `BootCatalog` (including catalogs spanning several sectors), `BootEntry` with the image size, and `BootCatalog::extractImage()`
 - `Extractor` with restored modification times, `preserveMode` (Rock Ridge permissions) and `continueOnError` with `getErrors()`; symbolic links are never created
 - `Util\SafePath` to validate untrusted names
-- CLI: `--cat`, `--find`, `--list`, `--json`, `--ndjson`, `--extract-boot`, `--files`, `--volume=primary|joliet|udf`, `--no-rock-ridge`, `-f -` (standard input), bundled short flags (`-lj`), documented exit codes, errors on the standard error; `IsoTool::run()` returns the exit code
+- `WalkWarnings` collector reporting incomplete listings (depth limit, oversized, unreadable or corrupt directories, skipped UDF entries), with a strict mode that throws
+- CLI: `--cat`, `--find`, `--list`, `--json`, `--ndjson`, `--extract-boot`, `--files`, `--volume=primary|joliet|udf`, `--no-rock-ridge`, `--strict` (`WARNING:` lines on the standard error otherwise), `-f -` (standard input), bundled short flags (`-lj`), documented exit codes, errors on the standard error; `IsoTool::run()` returns the exit code
 - `CHANGELOG.md`, `UPGRADE-2.0.md`, a rewritten `SECURITY.md` (private vulnerability reporting), generated real-world fixtures (`fixtures/build-fixtures.sh`), `composer run check` and the other composer scripts
 - CI: Windows job, tests with the lowest dependencies, `composer audit`, coverage gates
 

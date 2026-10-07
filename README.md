@@ -73,6 +73,8 @@ Options:
       --volume=<name>            File system used by --list, --cat, --find and --extract: primary, joliet or udf
                                  (default: Joliet, else primary, else UDF)
       --no-rock-ridge            Ignore the Rock Ridge extensions (use the plain ISO 9660 / Joliet names)
+      --strict                   Fail on the first incomplete listing (depth limit, unreadable or corrupt directory)
+                                 instead of printing "WARNING: ..." lines on the standard error output
   -h, --help                     Show this help
 
 Only one of --list, --json, --extract, --cat, --find and --extract-boot can be used at a time.
@@ -236,7 +238,17 @@ The image is untrusted input, so sizes taken from it are bounded:
 - `IsoFile::MAX_STREAM_BYTES` (4 GiB): the largest stream accepted by `IsoFile::fromStream()` unless another limit is given
 - `IsoFile::MAX_DESCRIPTORS` (64): the maximum number of volume descriptors read
 - `walk($isoFile, $maxDepth = 64)`: directories nested deeper are not listed
-A listing can therefore be incomplete (too deep or oversized directories, corrupt directory records); incomplete listings can be detected through the warnings collector that `walk()` accepts as an optional parameter.
+A listing can therefore be incomplete (too deep or oversized directories, corrupt directory records, unreadable UDF entries). Pass a `PhpIso\WalkWarnings` collector to `walk()`, `listDirectory()`, `find()`, `search()` or `Extractor::extract()` to find out (`new WalkWarnings(strict: true)` throws a `PhpIso\Exception` at the first problem instead):
+
+```php
+$warnings = new \PhpIso\WalkWarnings();
+foreach ($volume->walk($isoFile, 64, $warnings) as $entry) {
+    // ...
+}
+foreach ($warnings->all() as $warning) {
+    echo 'WARNING: ' . $warning . PHP_EOL;
+}
+```
 
 Low level access to the descriptors and the path table:
 ```php
