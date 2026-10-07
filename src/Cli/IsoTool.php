@@ -17,6 +17,7 @@ use PhpIso\FileSystem;
 use PhpIso\IsoEntry;
 use PhpIso\IsoFile;
 use PhpIso\Udf\UdfFileSystem;
+use PhpIso\WalkWarnings;
 use Throwable;
 
 class IsoTool
@@ -31,6 +32,8 @@ class IsoTool
     private string $volumeName = '';
 
     private bool $rockRidge = true;
+
+    private WalkWarnings $warnings;
 
     /**
      * @param resource|null $input stream read when the file is "-" (defaults to the standard input)
@@ -119,6 +122,7 @@ class IsoTool
 
         $this->volumeName = $volumeName;
         $this->rockRidge = ! isset($options['no-rock-ridge']);
+        $this->warnings = new WalkWarnings(isset($options['strict']));
 
         try {
             $this->checkIsoFile($file);
@@ -140,9 +144,12 @@ class IsoTool
                 $this->infoAction($file, isset($options['files']));
             }
         } catch (Throwable $ex) {
+            $this->displayWarnings();
             $this->displayError($ex->getMessage());
             return self::EXIT_ERROR;
         }
+
+        $this->displayWarnings();
 
         return self::EXIT_OK;
     }
@@ -210,7 +217,7 @@ class IsoTool
         $isoFile = $this->openIso($file);
         $volume = $this->requireVolume($isoFile);
 
-        foreach ($volume->walk($isoFile) as $entry) {
+        foreach ($volume->walk($isoFile, 64, $this->warnings) as $entry) {
             if ($ndjson) {
                 echo json_encode($entry->toArray(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) . PHP_EOL;
             } elseif ($entry->isDirectory) {
@@ -226,7 +233,7 @@ class IsoTool
         $isoFile = $this->openIso($file);
         $volume = $this->requireVolume($isoFile);
 
-        $entry = $volume->find($isoFile, $path);
+        $entry = $volume->find($isoFile, $path, $this->warnings);
         if (! $entry instanceof IsoEntry) {
             throw new Exception('File not found in the ISO: ' . $path);
         }
@@ -245,7 +252,7 @@ class IsoTool
         $isoFile = $this->openIso($file);
         $volume = $this->requireVolume($isoFile);
 
-        foreach ($volume->search($isoFile, $pattern) as $entry) {
+        foreach ($volume->search($isoFile, $pattern, $this->warnings) as $entry) {
             echo $entry->path . ($entry->isDirectory ? '/' : "\t" . $entry->size) . PHP_EOL;
         }
     }
@@ -298,7 +305,7 @@ class IsoTool
 
         $count = (new Extractor())->extract($isoFile, $volume, $extractPath, static function (IsoEntry $entry): void {
             echo $entry->path . ' (location: ' . $entry->location . ') (length: ' . $entry->size . ')' . PHP_EOL;
-        });
+        }, $this->warnings);
 
         echo 'Extract finished! (' . $count . ' files)' . PHP_EOL;
     }
@@ -350,14 +357,14 @@ class IsoTool
             {
             }
 
-            public function walk(IsoFile $isoFile, int $maxDepth = 64): Generator
+            public function walk(IsoFile $isoFile, int $maxDepth = 64, ?WalkWarnings $warnings = null): Generator
             {
-                return $this->volume->walk($isoFile, $maxDepth, false);
+                return $this->volume->walk($isoFile, $maxDepth, $warnings, false);
             }
 
-            public function listDirectory(IsoFile $isoFile, ?IsoEntry $directory = null): Generator
+            public function listDirectory(IsoFile $isoFile, ?IsoEntry $directory = null, ?WalkWarnings $warnings = null): Generator
             {
-                return $this->volume->listDirectory($isoFile, $directory, false);
+                return $this->volume->listDirectory($isoFile, $directory, $warnings, false);
             }
 
             public function getEntryRanges(IsoFile $isoFile, IsoEntry $entry): array
@@ -516,7 +523,7 @@ class IsoTool
         }
 
         $valued = ['f', 'x', 'c', 'file', 'extract', 'cat', 'find', 'volume', 'extract-boot'];
-        $flags = ['l', 'j', 'h', 'list', 'json', 'help', 'files', 'ndjson', 'no-rock-ridge'];
+        $flags = ['l', 'j', 'h', 'list', 'json', 'help', 'files', 'ndjson', 'no-rock-ridge', 'strict'];
 
         $options = [];
 
@@ -576,7 +583,24 @@ class IsoTool
     }
     protected function displayError(string $error): void
     {
-        fwrite(STDERR, 'ERROR: ' . $error . PHP_EOL);
+        $this->writeError('ERROR: ' . $error);
+    }
+
+    protected function writeError(string $line): void
+    {
+        fwrite(STDERR, $line . PHP_EOL);
+    }
+
+    /**
+     * Report what made the listing incomplete (the exit code is not changed)
+     */
+    protected function displayWarnings(): void
+    {
+        foreach ($this->warnings->all() as $warning) {
+            $this->writeError('WARNING: ' . $warning);
+        }
+
+        $this->warnings->reset();
     }
 
     protected function displayHelp(): void
@@ -601,6 +625,8 @@ Options:
       --volume=<name>            File system used by --list, --cat, --find and --extract: primary, joliet or udf
                                  (default: Joliet, else primary, else UDF)
       --no-rock-ridge            Ignore the Rock Ridge extensions (use the plain ISO 9660 / Joliet names)
+      --strict                   Fail on the first incomplete listing (depth limit, unreadable or corrupt directory)
+                                 instead of printing "WARNING: ..." lines on the standard error output
   -h, --help                     Show this help
 
 Only one of --list, --json, --extract, --cat, --find and --extract-boot can be used at a time.
