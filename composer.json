@@ -33,6 +33,7 @@
     },
     "scripts": {
         "tests": "phpunit --no-coverage",
+        "smoke": "bash tests/smoke/run.sh",
         "tests:coverage": [
             "@putenv XDEBUG_MODE=coverage",
             "phpunit --coverage-text"
@@ -51,6 +52,7 @@
     },
     "scripts-descriptions": {
         "tests": "Run the test suite",
+        "smoke": "End to end tests of bin/isotool on every fixture, compared with the fixture manifests (needs bash)",
         "tests:coverage": "Run the test suite with a coverage summary (needs pcov or xdebug)",
         "cs:check": "Check the code style (PSR-12)",
         "cs:fix": "Fix the code style automatically",

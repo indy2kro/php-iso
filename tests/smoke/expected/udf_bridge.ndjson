@@ -1,0 +1,5 @@
+{"path":"/docs","name":"docs","type":"directory","size":2048,"location":280,"date":"2026-10-07T19:05:23+00:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/readme.txt","name":"readme.txt","type":"file","size":14,"location":283,"date":"2026-10-07T19:05:23+00:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/docs/data.bin","name":"data.bin","type":"file","size":5000,"location":284,"date":"2026-10-07T19:05:23+00:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/docs/sub","name":"sub","type":"directory","size":2048,"location":281,"date":"2026-10-07T19:05:23+00:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/docs/sub/doc.txt","name":"doc.txt","type":"file","size":11,"location":287,"date":"2026-10-07T19:05:23+00:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}

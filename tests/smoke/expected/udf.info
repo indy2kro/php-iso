@@ -1,0 +1,13 @@
+Input ISO file: fixtures/udf.iso
+
+Number of descriptors: 3
+  - UDF BEA01 descriptor
+
+  - UDF NSR03 descriptor
+
+  - UDF TEA descriptor
+
+  - UDF file system
+   - Volume ID: LinuxUDF
+   - Files:
+

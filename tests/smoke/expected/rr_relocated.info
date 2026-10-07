@@ -1,0 +1,40 @@
+Input ISO file: fixtures/rr_relocated.iso
+
+Number of descriptors: 2
+  - Primary volume descriptor
+   - System ID: LINUX
+   - Volume ID: RELOCATED
+   - App ID: GENISOIMAGE ISO 9660/HFS FILESYSTEM CREATOR (C) 1993 E.YOUNGDALE (C) 1997-2006 J.PEARSON/J.SCHILLING (C) 2006-2007 CDRKIT TEAM
+   - File Structure Version: 1
+   - Volume Space Size: 189
+   - Volume Set Size: 1
+   - Volume SeqNum: 1
+   - Block size: 2048
+   - Volume Set ID: 
+   - Publisher ID: 
+   - Preparer ID: 
+   - Copyright File ID: 
+   - Abstract File ID: 
+   - Bibliographic File ID: 
+   - Creation Date: 2026-10-07 19:05:22
+   - Modification Date: 2026-10-07 19:05:22
+   - Expiration Date: 
+   - Effective Date: 2026-10-07 19:05:22
+   - Files:
+/a/
+/rr_moved/
+/top.txt (location: 36) (length: 4)
+/a/b/
+/a/b/c/
+/a/b/c/d/
+/a/b/c/d/e/
+/a/b/c/d/e/f/
+/a/b/c/d/e/f/g/
+/a/b/c/d/e/f/g/h/
+/a/b/c/d/e/f/g/h/eight.txt (location: 37) (length: 12)
+/a/b/c/d/e/f/g/h/i/
+/a/b/c/d/e/f/g/h/i/j/
+/a/b/c/d/e/f/g/h/i/j/deep.txt (location: 38) (length: 10)
+
+  - Terminator descriptor
+

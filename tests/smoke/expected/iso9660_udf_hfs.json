@@ -1,0 +1,146 @@
+{
+    "file": "fixtures/iso9660_udf_hfs.iso",
+    "descriptors": [
+        {
+            "type": 1,
+            "name": "Primary volume descriptor",
+            "systemId": "LINUX",
+            "volumeId": "UDF Bridge",
+            "appId": "GENISOIMAGE ISO 9660/HFS FILESYSTEM CREATOR (C) 1993 E.YOUNGDALE (C) 1997-2006 J.PEARSON/J.SCHILLING (C) 2006-2007 CDRKIT TEAM",
+            "publisherId": "",
+            "preparerId": "",
+            "volumeSpaceSize": 592,
+            "blockSize": 2048,
+            "jolietLevel": 0,
+            "creationDate": "2022-04-07T20:31:13+02:00",
+            "modificationDate": "2022-04-07T20:31:13+02:00",
+            "expirationDate": null,
+            "effectiveDate": "2022-04-07T20:31:13+02:00",
+            "files": [
+                {
+                    "path": "/nimbie.jpg",
+                    "name": "nimbie.jpg",
+                    "type": "file",
+                    "size": 69424,
+                    "location": 274,
+                    "date": "2017-11-01T18:19:19+01:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": 33060,
+                    "uid": 0,
+                    "gid": 0,
+                    "symlink": null
+                },
+                {
+                    "path": "/readme.txt",
+                    "name": "readme.txt",
+                    "type": "file",
+                    "size": 37,
+                    "location": 308,
+                    "date": "2017-11-01T18:19:19+01:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": 33060,
+                    "uid": 0,
+                    "gid": 0,
+                    "symlink": null
+                }
+            ]
+        },
+        {
+            "type": 2,
+            "name": "Supplementary volume descriptor",
+            "systemId": "LINUX",
+            "volumeId": "UDF Bridge",
+            "appId": "GENISOIMAGE ISO 9660_HFS FILESYSTEM CREATOR (C) 1993 E.YOUNGDALE",
+            "publisherId": "",
+            "preparerId": "",
+            "volumeSpaceSize": 592,
+            "blockSize": 2048,
+            "jolietLevel": 3,
+            "creationDate": "2022-04-07T20:31:13+02:00",
+            "modificationDate": "2022-04-07T20:31:13+02:00",
+            "expirationDate": null,
+            "effectiveDate": "2022-04-07T20:31:13+02:00",
+            "files": [
+                {
+                    "path": "/nimbie.jpg",
+                    "name": "nimbie.jpg",
+                    "type": "file",
+                    "size": 69424,
+                    "location": 274,
+                    "date": "2017-11-01T18:19:19+01:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                },
+                {
+                    "path": "/readme.txt",
+                    "name": "readme.txt",
+                    "type": "file",
+                    "size": 37,
+                    "location": 308,
+                    "date": "2017-11-01T18:19:19+01:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                }
+            ]
+        },
+        {
+            "type": 255,
+            "name": "Terminator descriptor"
+        },
+        {
+            "type": 100,
+            "name": "UDF BEA01 descriptor"
+        },
+        {
+            "type": 101,
+            "name": "UDF NSR02 descriptor"
+        },
+        {
+            "type": 103,
+            "name": "UDF TEA descriptor"
+        }
+    ],
+    "udf": {
+        "volumeId": "UDF Bridge",
+        "files": [
+            {
+                "path": "/nimbie.jpg",
+                "name": "nimbie.jpg",
+                "type": "file",
+                "size": 69424,
+                "location": 561152,
+                "date": "2017-11-01T18:19:19+01:00",
+                "hidden": false,
+                "extents": 1,
+                "mode": 33060,
+                "uid": 0,
+                "gid": 0,
+                "symlink": null
+            },
+            {
+                "path": "/readme.txt",
+                "name": "readme.txt",
+                "type": "file",
+                "size": 37,
+                "location": 630784,
+                "date": "2017-11-01T18:19:19+01:00",
+                "hidden": false,
+                "extents": 1,
+                "mode": 33060,
+                "uid": 0,
+                "gid": 0,
+                "symlink": null
+            }
+        ]
+    }
+}

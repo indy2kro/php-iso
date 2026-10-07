@@ -1,0 +1,35 @@
+Input ISO file: fixtures/rockridge.iso
+
+Number of descriptors: 2
+  - Primary volume descriptor
+   - System ID: 
+   - Volume ID: ROCKRIDGE
+   - App ID: 
+   - File Structure Version: 1
+   - Volume Space Size: 186
+   - Volume Set Size: 1
+   - Volume SeqNum: 1
+   - Block size: 2048
+   - Volume Set ID: 
+   - Publisher ID: 
+   - Preparer ID: XORRISO-1.5.6 2023.06.07.180001, LIBISOBURN-1.5.6, LIBISOFS-1.5.6, LIBBURN-1.5.6
+   - Copyright File ID: 
+   - Abstract File ID: 
+   - Bibliographic File ID: 
+   - Creation Date: 2023-11-14 22:13:20
+   - Modification Date: 2023-11-14 22:13:20
+   - Expiration Date: 
+   - Effective Date: 
+   - Files:
+/dir1/
+/hello.txt (location: 34) (length: 17)
+/link_to_hello (location: 32) (length: 0)
+/long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_long_name_.txt (location: 35) (length: 5)
+/dir1/dir2/
+/dir1/dir2/dir3/
+/dir1/dir2/dir3/dir4/
+/dir1/dir2/dir3/dir4/dir5/
+/dir1/dir2/dir3/dir4/dir5/deep.txt (location: 33) (length: 5)
+
+  - Terminator descriptor
+

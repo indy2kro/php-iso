@@ -1,0 +1,6 @@
+{"path":"/CONTRIBU.MD","name":"CONTRIBU.MD","type":"file","size":2983,"location":25,"date":"2025-01-15T08:51:29+02:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/LICENSE","name":"LICENSE","type":"file","size":35149,"location":27,"date":"2025-01-13T08:37:20+02:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/SUB_DIR","name":"SUB_DIR","type":"directory","size":2048,"location":24,"date":"2025-01-15T09:41:06+02:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/TEST_FIL.TXT","name":"TEST_FIL.TXT","type":"file","size":10,"location":45,"date":"2025-01-15T09:40:59+02:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/SUB_DIR/TEST_000.TXT","name":"TEST_000.TXT","type":"file","size":10,"location":46,"date":"2025-01-15T09:40:59+02:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/SUB_DIR/TEST_FIL.TXT","name":"TEST_FIL.TXT","type":"file","size":10,"location":47,"date":"2025-01-15T09:40:59+02:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}

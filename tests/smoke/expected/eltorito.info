@@ -1,0 +1,66 @@
+Input ISO file: fixtures/eltorito.iso
+
+Number of descriptors: 4
+  - Primary volume descriptor
+   - System ID: 
+   - Volume ID: ELTORITO
+   - App ID: 
+   - File Structure Version: 1
+   - Volume Space Size: 197
+   - Volume Set Size: 1
+   - Volume SeqNum: 1
+   - Block size: 2048
+   - Volume Set ID: 
+   - Publisher ID: 
+   - Preparer ID: XORRISO-1.5.6 2023.06.07.180001, LIBISOBURN-1.5.6, LIBISOFS-1.5.6, LIBBURN-1.5.6
+   - Copyright File ID: 
+   - Abstract File ID: 
+   - Bibliographic File ID: 
+   - Creation Date: 2023-11-14 22:13:20
+   - Modification Date: 2023-11-14 22:13:20
+   - Expiration Date: 
+   - Effective Date: 
+   - Files:
+/boot/
+/readme.txt (location: 46) (length: 9)
+/boot/bios.bin (location: 34) (length: 8192)
+/boot/boot.cat (location: 33) (length: 2048)
+/boot/efi.img (location: 38) (length: 16384)
+
+  - Boot volume descriptor
+   - Boot System ID: EL TORITO SPECIFICATION
+   - Boot ID: 
+   - Boot Catalog Location: 33
+   - Boot Catalog Checksum: valid
+   - Boot Entry 1: bootable, platform x86, media No emulation, load segment 0x0, sectors 4, load RBA 34
+   - Boot Entry 2: bootable, platform EFI, media No emulation, load segment 0x0, sectors 32, load RBA 38
+
+  - Supplementary volume descriptor
+   - System ID: 
+   - Volume ID: ELTORITO
+   - App ID: 
+   - File Structure Version: 1
+   - Volume Space Size: 197
+   - Volume Set Size: 1
+   - Volume SeqNum: 1
+   - Block size: 2048
+   - Volume Set ID: 
+   - Publisher ID: 
+   - Preparer ID: XORRISO-1.5.6 2023.06.07.180001, LIBISOBURN-1.5.6, LIBISOFS-1.5.
+   - Copyright File ID: ?
+   - Abstract File ID: ?
+   - Bibliographic File ID: ?
+   - Creation Date: 2023-11-14 22:13:20
+   - Modification Date: 2023-11-14 22:13:20
+   - Expiration Date: 
+   - Effective Date: 
+   - Joliet Level: 3
+   - Files:
+/boot/
+/readme.txt (location: 46) (length: 9)
+/boot/bios.bin (location: 34) (length: 8192)
+/boot/boot.cat (location: 33) (length: 2048)
+/boot/efi.img (location: 38) (length: 16384)
+
+  - Terminator descriptor
+

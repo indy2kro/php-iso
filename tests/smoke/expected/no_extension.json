@@ -1,0 +1,69 @@
+{
+    "file": "fixtures/no_extension.iso",
+    "descriptors": [
+        {
+            "type": 1,
+            "name": "Primary volume descriptor",
+            "systemId": "LINUX",
+            "volumeId": "NOEXT",
+            "appId": "GENISOIMAGE ISO 9660/HFS FILESYSTEM CREATOR (C) 1993 E.YOUNGDALE (C) 1997-2006 J.PEARSON/J.SCHILLING (C) 2006-2007 CDRKIT TEAM",
+            "publisherId": "",
+            "preparerId": "",
+            "volumeSpaceSize": 177,
+            "blockSize": 2048,
+            "jolietLevel": 0,
+            "creationDate": "2026-10-07T17:55:40+00:00",
+            "modificationDate": "2026-10-07T17:55:40+00:00",
+            "expirationDate": null,
+            "effectiveDate": "2026-10-07T17:55:40+00:00",
+            "files": [
+                {
+                    "path": "/DATA.TXT",
+                    "name": "DATA.TXT",
+                    "type": "file",
+                    "size": 5,
+                    "location": 24,
+                    "date": "2026-10-07T17:55:40+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                },
+                {
+                    "path": "/LICENSE",
+                    "name": "LICENSE",
+                    "type": "file",
+                    "size": 13,
+                    "location": 25,
+                    "date": "2026-10-07T17:55:40+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                },
+                {
+                    "path": "/README",
+                    "name": "README",
+                    "type": "file",
+                    "size": 7,
+                    "location": 26,
+                    "date": "2026-10-07T17:55:40+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                }
+            ]
+        },
+        {
+            "type": 255,
+            "name": "Terminator descriptor"
+        }
+    ]
+}

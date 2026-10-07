@@ -1,0 +1,73 @@
+{
+    "file": "fixtures/1mb.iso",
+    "descriptors": [
+        {
+            "type": 1,
+            "name": "Primary volume descriptor",
+            "systemId": "Win32",
+            "volumeId": "25_12_2024",
+            "appId": "PowerISO",
+            "publisherId": "",
+            "preparerId": "",
+            "volumeSpaceSize": 542,
+            "blockSize": 2048,
+            "jolietLevel": 0,
+            "creationDate": "2024-12-25T14:01:20+03:00",
+            "modificationDate": "2024-12-25T14:01:20+03:00",
+            "expirationDate": null,
+            "effectiveDate": null,
+            "files": [
+                {
+                    "path": "/1MB.PNG",
+                    "name": "1MB.PNG",
+                    "type": "file",
+                    "size": 1048576,
+                    "location": 30,
+                    "date": "2024-08-23T10:18:20+03:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                }
+            ]
+        },
+        {
+            "type": 2,
+            "name": "Supplementary volume descriptor",
+            "systemId": "Win32",
+            "volumeId": "25_12_2024",
+            "appId": "PowerISO",
+            "publisherId": "",
+            "preparerId": "",
+            "volumeSpaceSize": 542,
+            "blockSize": 2048,
+            "jolietLevel": 3,
+            "creationDate": "2024-12-25T14:01:20+03:00",
+            "modificationDate": "2024-12-25T14:01:20+03:00",
+            "expirationDate": null,
+            "effectiveDate": null,
+            "files": [
+                {
+                    "path": "/1mb.png",
+                    "name": "1mb.png",
+                    "type": "file",
+                    "size": 1048576,
+                    "location": 30,
+                    "date": "2024-08-23T10:18:20+03:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                }
+            ]
+        },
+        {
+            "type": 255,
+            "name": "Terminator descriptor"
+        }
+    ]
+}

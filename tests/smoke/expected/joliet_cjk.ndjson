@@ -1,0 +1,4 @@
+{"path":"/ディレクトリ","name":"ディレクトリ","type":"directory","size":2048,"location":31,"date":"2026-10-07T17:55:40+00:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/中文文件.txt","name":"中文文件.txt","type":"file","size":8,"location":32,"date":"2026-10-07T17:55:40+00:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/日本語ファイル.txt","name":"日本語ファイル.txt","type":"file","size":9,"location":33,"date":"2026-10-07T17:55:40+00:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/ディレクトリ/ネスト.txt","name":"ネスト.txt","type":"file","size":7,"location":34,"date":"2026-10-07T17:55:40+00:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}

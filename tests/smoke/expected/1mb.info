@@ -1,0 +1,50 @@
+Input ISO file: fixtures/1mb.iso
+
+Number of descriptors: 3
+  - Primary volume descriptor
+   - System ID: Win32
+   - Volume ID: 25_12_2024
+   - App ID: PowerISO
+   - File Structure Version: 1
+   - Volume Space Size: 542
+   - Volume Set Size: 1
+   - Volume SeqNum: 1
+   - Block size: 2048
+   - Volume Set ID: 
+   - Publisher ID: 
+   - Preparer ID: 
+   - Copyright File ID: 
+   - Abstract File ID: 
+   - Bibliographic File ID: 
+   - Creation Date: 2024-12-25 14:01:20
+   - Modification Date: 2024-12-25 14:01:20
+   - Expiration Date: 
+   - Effective Date: 
+   - Files:
+/1MB.PNG (location: 30) (length: 1048576)
+
+  - Supplementary volume descriptor
+   - System ID: Win32
+   - Volume ID: 25_12_2024
+   - App ID: PowerISO
+   - File Structure Version: 1
+   - Volume Space Size: 542
+   - Volume Set Size: 1
+   - Volume SeqNum: 1
+   - Block size: 2048
+   - Volume Set ID: 
+   - Publisher ID: 
+   - Preparer ID: 
+   - Copyright File ID: ?
+   - Abstract File ID: ?
+   - Bibliographic File ID: ?
+   - Creation Date: 2024-12-25 14:01:20
+   - Modification Date: 2024-12-25 14:01:20
+   - Expiration Date: 
+   - Effective Date: 
+   - Joliet Level: 3
+   - Files:
+/1mb.png (location: 30) (length: 1048576)
+
+  - Terminator descriptor
+

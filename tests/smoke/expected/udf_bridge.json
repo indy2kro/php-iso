@@ -1,0 +1,272 @@
+{
+    "file": "fixtures/udf_bridge.iso",
+    "descriptors": [
+        {
+            "type": 1,
+            "name": "Primary volume descriptor",
+            "systemId": "LINUX",
+            "volumeId": "BRIDGE",
+            "appId": "GENISOIMAGE ISO 9660/HFS FILESYSTEM CREATOR (C) 1993 E.YOUNGDALE (C) 1997-2006 J.PEARSON/J.SCHILLING (C) 2006-2007 CDRKIT TEAM",
+            "publisherId": "",
+            "preparerId": "",
+            "volumeSpaceSize": 439,
+            "blockSize": 2048,
+            "jolietLevel": 0,
+            "creationDate": "2026-10-07T19:05:23+00:00",
+            "modificationDate": "2026-10-07T19:05:23+00:00",
+            "expirationDate": null,
+            "effectiveDate": "2026-10-07T19:05:23+00:00",
+            "files": [
+                {
+                    "path": "/docs",
+                    "name": "docs",
+                    "type": "directory",
+                    "size": 2048,
+                    "location": 277,
+                    "date": "2026-10-07T19:05:23+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": 16877,
+                    "uid": 0,
+                    "gid": 0,
+                    "symlink": null
+                },
+                {
+                    "path": "/readme.txt",
+                    "name": "readme.txt",
+                    "type": "file",
+                    "size": 14,
+                    "location": 283,
+                    "date": "2026-10-07T19:05:23+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": 33188,
+                    "uid": 0,
+                    "gid": 0,
+                    "symlink": null
+                },
+                {
+                    "path": "/docs/data.bin",
+                    "name": "data.bin",
+                    "type": "file",
+                    "size": 5000,
+                    "location": 284,
+                    "date": "2026-10-07T19:05:23+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": 33188,
+                    "uid": 0,
+                    "gid": 0,
+                    "symlink": null
+                },
+                {
+                    "path": "/docs/sub",
+                    "name": "sub",
+                    "type": "directory",
+                    "size": 2048,
+                    "location": 278,
+                    "date": "2026-10-07T19:05:23+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": 16877,
+                    "uid": 0,
+                    "gid": 0,
+                    "symlink": null
+                },
+                {
+                    "path": "/docs/sub/doc.txt",
+                    "name": "doc.txt",
+                    "type": "file",
+                    "size": 11,
+                    "location": 287,
+                    "date": "2026-10-07T19:05:23+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": 33188,
+                    "uid": 0,
+                    "gid": 0,
+                    "symlink": null
+                }
+            ]
+        },
+        {
+            "type": 2,
+            "name": "Supplementary volume descriptor",
+            "systemId": "LINUX",
+            "volumeId": "BRIDGE",
+            "appId": "GENISOIMAGE ISO 9660_HFS FILESYSTEM CREATOR (C) 1993 E.YOUNGDALE",
+            "publisherId": "",
+            "preparerId": "",
+            "volumeSpaceSize": 439,
+            "blockSize": 2048,
+            "jolietLevel": 3,
+            "creationDate": "2026-10-07T19:05:23+00:00",
+            "modificationDate": "2026-10-07T19:05:23+00:00",
+            "expirationDate": null,
+            "effectiveDate": "2026-10-07T19:05:23+00:00",
+            "files": [
+                {
+                    "path": "/docs",
+                    "name": "docs",
+                    "type": "directory",
+                    "size": 2048,
+                    "location": 280,
+                    "date": "2026-10-07T19:05:23+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                },
+                {
+                    "path": "/readme.txt",
+                    "name": "readme.txt",
+                    "type": "file",
+                    "size": 14,
+                    "location": 283,
+                    "date": "2026-10-07T19:05:23+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                },
+                {
+                    "path": "/docs/data.bin",
+                    "name": "data.bin",
+                    "type": "file",
+                    "size": 5000,
+                    "location": 284,
+                    "date": "2026-10-07T19:05:23+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                },
+                {
+                    "path": "/docs/sub",
+                    "name": "sub",
+                    "type": "directory",
+                    "size": 2048,
+                    "location": 281,
+                    "date": "2026-10-07T19:05:23+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                },
+                {
+                    "path": "/docs/sub/doc.txt",
+                    "name": "doc.txt",
+                    "type": "file",
+                    "size": 11,
+                    "location": 287,
+                    "date": "2026-10-07T19:05:23+00:00",
+                    "hidden": false,
+                    "extents": 1,
+                    "mode": null,
+                    "uid": null,
+                    "gid": null,
+                    "symlink": null
+                }
+            ]
+        },
+        {
+            "type": 255,
+            "name": "Terminator descriptor"
+        },
+        {
+            "type": 100,
+            "name": "UDF BEA01 descriptor"
+        },
+        {
+            "type": 101,
+            "name": "UDF NSR02 descriptor"
+        },
+        {
+            "type": 103,
+            "name": "UDF TEA descriptor"
+        }
+    ],
+    "udf": {
+        "volumeId": "BRIDGE",
+        "files": [
+            {
+                "path": "/docs",
+                "name": "docs",
+                "type": "directory",
+                "size": 132,
+                "location": 536576,
+                "date": "2026-10-07T19:05:23+00:00",
+                "hidden": false,
+                "extents": 1,
+                "mode": 16749,
+                "uid": null,
+                "gid": null,
+                "symlink": null
+            },
+            {
+                "path": "/readme.txt",
+                "name": "readme.txt",
+                "type": "file",
+                "size": 14,
+                "location": 579584,
+                "date": "2026-10-07T19:05:23+00:00",
+                "hidden": false,
+                "extents": 1,
+                "mode": 33060,
+                "uid": null,
+                "gid": null,
+                "symlink": null
+            },
+            {
+                "path": "/docs/data.bin",
+                "name": "data.bin",
+                "type": "file",
+                "size": 5000,
+                "location": 581632,
+                "date": "2026-10-07T19:05:23+00:00",
+                "hidden": false,
+                "extents": 1,
+                "mode": 33060,
+                "uid": null,
+                "gid": null,
+                "symlink": null
+            },
+            {
+                "path": "/docs/sub",
+                "name": "sub",
+                "type": "directory",
+                "size": 88,
+                "location": 540672,
+                "date": "2026-10-07T19:05:23+00:00",
+                "hidden": false,
+                "extents": 1,
+                "mode": 16749,
+                "uid": null,
+                "gid": null,
+                "symlink": null
+            },
+            {
+                "path": "/docs/sub/doc.txt",
+                "name": "doc.txt",
+                "type": "file",
+                "size": 11,
+                "location": 587776,
+                "date": "2026-10-07T19:05:23+00:00",
+                "hidden": false,
+                "extents": 1,
+                "mode": 33060,
+                "uid": null,
+                "gid": null,
+                "symlink": null
+            }
+        ]
+    }
+}

@@ -1,0 +1,6 @@
+{"path":"/COMMAND.COM","name":"COMMAND.COM","type":"file","size":37557,"location":745,"date":"1989-04-07T00:00:04+00:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/FDISK.EXE","name":"FDISK.EXE","type":"file","size":60935,"location":764,"date":"1989-04-07T00:00:04+00:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/FORMAT.COM","name":"FORMAT.COM","type":"file","size":22875,"location":794,"date":"1989-04-07T00:00:04+00:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/IO.SYS","name":"IO.SYS","type":"file","size":33337,"location":806,"date":"1989-04-07T00:00:04+00:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/MSDOS.SYS","name":"MSDOS.SYS","type":"file","size":37376,"location":823,"date":"1989-04-07T00:00:04+00:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}
+{"path":"/SYS.COM","name":"SYS.COM","type":"file","size":11456,"location":842,"date":"1989-04-07T00:00:04+00:00","hidden":false,"extents":1,"mode":null,"uid":null,"gid":null,"symlink":null}

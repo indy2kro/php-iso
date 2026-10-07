@@ -24,6 +24,7 @@ composer run cs:check      # PHP_CodeSniffer / PSR12 (cs:fix to auto fix)
 composer run phpstan       # PHPStan static analysis
 composer run rector:check  # Rector (dry run, same as CI)
 composer run check         # every gate used by CI
+composer run smoke         # end to end CLI tests on every fixture (bash; UPDATE=1 tests/smoke/run.sh regenerates the expected outputs)
 ```
 
 ## Code Style Guidelines

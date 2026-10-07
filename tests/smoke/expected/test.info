@@ -1,0 +1,74 @@
+Input ISO file: fixtures/test.iso
+
+Number of descriptors: 5
+  - Primary volume descriptor
+   - System ID: 
+   - Volume ID: PHP_ISO_FILE
+   - App ID: IMGBURN V2.5.8.0 - THE ULTIMATE IMAGE BURNER!
+   - File Structure Version: 1
+   - Volume Space Size: 599
+   - Volume Set Size: 1
+   - Volume SeqNum: 1
+   - Block size: 2048
+   - Volume Set ID: UNDEFINED
+   - Publisher ID: 
+   - Preparer ID: 
+   - Copyright File ID: 
+   - Abstract File ID: 
+   - Bibliographic File ID: 
+   - Creation Date: 2025-01-12 15:00:53
+   - Modification Date: 2025-01-12 15:00:53
+   - Expiration Date: 
+   - Effective Date: 
+   - Files:
+/CLASSES/
+/COMPOSER.JSO (location: 554) (length: 624)
+/EXAMPLES/
+/CLASSES/BOOT_CA2.PHP (location: 557) (length: 7748)
+/CLASSES/BOOT_CAT.PHP (location: 555) (length: 2868)
+/CLASSES/BUFFER_C.PHP (location: 561) (length: 6715)
+/CLASSES/DESCRIP2.PHP (location: 568) (length: 5973)
+/CLASSES/DESCRIP3.PHP (location: 571) (length: 3093)
+/CLASSES/DESCRIP4.PHP (location: 573) (length: 1768)
+/CLASSES/DESCRIP5.PHP (location: 574) (length: 11982)
+/CLASSES/DESCRIPT.PHP (location: 565) (length: 5520)
+/CLASSES/FILE_DIR.PHP (location: 580) (length: 10674)
+/CLASSES/FILE_ISO.PHP (location: 586) (length: 4702)
+/CLASSES/ISO_DATE.PHP (location: 589) (length: 2842)
+/CLASSES/ISO_INCL.PHP (location: 591) (length: 743)
+/CLASSES/PATH_TAB.PHP (location: 592) (length: 4054)
+/EXAMPLES/BOOTCATA.PHP (location: 594) (length: 1934)
+/EXAMPLES/ISO_BASE.PHP (location: 595) (length: 2491)
+/EXAMPLES/ISO_FILE.PHP (location: 597) (length: 2690)
+
+  - Terminator descriptor
+
+  - UDF BEA01 descriptor
+
+  - UDF NSR02 descriptor
+
+  - UDF TEA descriptor
+
+  - UDF file system
+   - Volume ID: php-iso-file
+   - Files:
+/classes/
+/composer.json (location: 1134592) (length: 624)
+/examples/
+/classes/boot_catalog.class.php (location: 1136640) (length: 2868)
+/classes/boot_catalog_entry.class.php (location: 1140736) (length: 7748)
+/classes/buffer.class.php (location: 1148928) (length: 6715)
+/classes/descriptor.class.php (location: 1157120) (length: 5520)
+/classes/descriptor_boot.class.php (location: 1163264) (length: 5973)
+/classes/descriptor_partition.class.php (location: 1169408) (length: 3093)
+/classes/descriptor_terminator.class.php (location: 1173504) (length: 1768)
+/classes/descriptor_volume.class.php (location: 1175552) (length: 11982)
+/classes/file_dir_descriptors.class.php (location: 1187840) (length: 10674)
+/classes/file_iso.class.php (location: 1200128) (length: 4702)
+/classes/iso_date.class.php (location: 1206272) (length: 2842)
+/classes/iso_includes.php (location: 1210368) (length: 743)
+/classes/path_table_record.class.php (location: 1212416) (length: 4054)
+/examples/BootCatalog_test.php (location: 1216512) (length: 1934)
+/examples/iso_base_test.php (location: 1218560) (length: 2491)
+/examples/iso_files_test.php.php (location: 1222656) (length: 2690)
+
