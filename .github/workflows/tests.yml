@@ -3,8 +3,9 @@ name: Tests
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
   schedule:
-    - cron: "0 6 * * *"
+    - cron: "0 6 * * 1"
   pull_request:
     branches: [ main ]
 
@@ -19,15 +20,11 @@ jobs:
 
     strategy:
       fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
-          - windows-latest
-          - macos-latest
-        php-version:
-          - "8.3"
-          - "8.4"
-          - "8.5"
+      # Pull requests and pushes are a Linux smoke test on every supported PHP version. The full OS and PHP matrix
+      # runs weekly and on demand.
+      matrix: ${{ fromJSON(github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        && '{"os":["ubuntu-latest","windows-latest","macos-latest"],"php-version":["8.3","8.4","8.5"]}'
+        || '{"os":["ubuntu-latest"],"php-version":["8.3","8.4","8.5"]}') }}
 
     defaults:
       run:
